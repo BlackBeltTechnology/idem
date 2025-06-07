@@ -1,0 +1,102 @@
+import { describe, expect, it } from 'vitest';
+import { parseLocalDate } from '~/utils/datetime';
+import { evaluate } from './evaluate';
+import { expressionToAst } from './parse';
+
+const ctx = {
+  self: {
+    a: 1,
+    b: 2,
+    flag: false,
+    nested: { x: 42 },
+    arr: [10, 20, { val: 5 }],
+    matrix: [
+      [1, 2],
+      [3, 4],
+    ],
+    str: 'hello',
+    items: [1, 2, 3],
+  },
+};
+
+describe('evaluate', () => {
+  it('parses numbers and unary minus', () => {
+    expect(evaluate(expressionToAst('123'), ctx)).toBe(123);
+    expect(evaluate(expressionToAst('-123'), ctx)).toBe(-123);
+    expect(evaluate(expressionToAst('0'), ctx)).toBe(0);
+  });
+
+  it('parses booleans and not', () => {
+    expect(evaluate(expressionToAst('true'), ctx)).toBe(true);
+    expect(evaluate(expressionToAst('false'), ctx)).toBe(false);
+    expect(evaluate(expressionToAst('!false'), ctx)).toBe(true);
+  });
+
+  it('parses null', () => {
+    expect(evaluate(expressionToAst('null'), ctx)).toBeNull();
+  });
+
+  it('parses local dates (as strings)', () => {
+    expect(evaluate(expressionToAst('2023-12-31'), ctx)).toEqual(parseLocalDate('2023-12-31'));
+  });
+
+  it('resolves simple self properties', () => {
+    expect(evaluate(expressionToAst('self.a'), ctx)).toBe(1);
+    expect(evaluate(expressionToAst('self.nested.x'), ctx)).toBe(42);
+  });
+
+  it('handles + - * / % ^', () => {
+    expect(evaluate(expressionToAst('1+2'), ctx)).toBe(3);
+    expect(evaluate(expressionToAst('5-3'), ctx)).toBe(2);
+    expect(evaluate(expressionToAst('2*3'), ctx)).toBe(6);
+    expect(evaluate(expressionToAst('8/4'), ctx)).toBe(2);
+    expect(evaluate(expressionToAst('10%3'), ctx)).toBe(1);
+    expect(evaluate(expressionToAst('2^3'), ctx)).toBe(8);
+  });
+
+  it('handles > >= < <= == !=', () => {
+    expect(evaluate(expressionToAst('3>2'), ctx)).toBe(true);
+    expect(evaluate(expressionToAst('3>=3'), ctx)).toBe(true);
+    expect(evaluate(expressionToAst('2<3'), ctx)).toBe(true);
+    expect(evaluate(expressionToAst('2<=2'), ctx)).toBe(true);
+    expect(evaluate(expressionToAst('2==2'), ctx)).toBe(true);
+    expect(evaluate(expressionToAst('2!=3'), ctx)).toBe(true);
+  });
+
+  it('handles && and ||', () => {
+    expect(evaluate(expressionToAst('true&&false'), ctx)).toBe(false);
+    expect(evaluate(expressionToAst('true||false'), ctx)).toBe(true);
+  });
+
+  it('handles ternary operator', () => {
+    expect(evaluate(expressionToAst('1>0?10:20'), ctx)).toBe(10);
+    expect(evaluate(expressionToAst('1<0?10:20'), ctx)).toBe(20);
+  });
+
+  it('handles in operator', () => {
+    expect(evaluate(expressionToAst('2 in [1,2,3]'), ctx)).toBe(true);
+    expect(evaluate(expressionToAst('4 in [1,2,3]'), ctx)).toBe(false);
+  });
+
+  it('parses lists and indexing', () => {
+    expect(evaluate(expressionToAst('[1,2,3]'), ctx)).toEqual([1, 2, 3]);
+    expect(evaluate(expressionToAst('[1,2,3][1]'), ctx)).toBe(2);
+    expect(evaluate(expressionToAst('[[1,2],[3,4]][1][0]'), ctx)).toBe(3);
+  });
+
+  it('parses strings and char access', () => {
+    expect(evaluate(expressionToAst(`"abc"`), ctx)).toBe('abc');
+    expect(evaluate(expressionToAst(`"abc"[1]`), ctx)).toBe('b');
+    expect(evaluate(expressionToAst(`"abc"[1]=="b"`), ctx)).toBe(true);
+  });
+
+  it('handles pointer access after parentheses', () => {
+    expect(evaluate(expressionToAst('(self.arr[2]).val'), ctx)).toBe(5);
+    expect(evaluate(expressionToAst('self.matrix[1][0]'), ctx)).toBe(3);
+  });
+
+  it('evaluates a complex combined expression', () => {
+    const expr = '!(self.a+self.b>2) && (self.items in [1,2,3]) ? self.matrix[0][1] : self.nested.x';
+    expect(evaluate(expressionToAst(expr), ctx)).toBe(42);
+  });
+});

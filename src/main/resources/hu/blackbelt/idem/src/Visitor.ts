@@ -38,12 +38,13 @@ import type {
   UnaryMinusExpressionContext,
 } from '~/generated/IdemParser';
 import { IdemVisitor } from '~/generated/IdemVisitor';
+import type { AstNodeType } from '~/types/ast';
 
 /**
  * A single AST node.
  */
 export type ASTNode = {
-  type: string;
+  type: AstNodeType;
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   [key: string]: any;
 };
