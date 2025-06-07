@@ -1,0 +1,46 @@
+{
+  "name": "idem",
+  "version": "0.1.0",
+  "description": "",
+  "type": "module",
+  "main": "dist/idem.cjs.js",
+  "module": "dist/idem.es.js",
+  "unpkg": "dist/idem.umd.js",
+  "exports": {
+    ".": {
+      "require": "./dist/idem.cjs.js",
+      "import": "./dist/idem.es.js",
+      "browser": "./dist/idem.umd.js"
+    }
+  },
+
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "generate:antlr": "antlr-ng -Dlanguage=TypeScript -v -o src/generated ../../../../antlr4/hu.blackbelt.idem/Idem.g4",
+    "test:dev": "vitest",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "format": "biome format ./src --write && biome check --write ./src"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.15.30",
+    "@vitest/coverage-v8": "^3.2.2",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@biomejs/biome"
+    ]
+  },
+  "dependencies": {
+    "antlr-ng": "^1.0.9",
+    "antlr4ng": "^3.0.16",
+    "vitest": "^3.2.2"
+  }
+}

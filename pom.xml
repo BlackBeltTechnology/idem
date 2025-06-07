@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>lofasz</groupId>
+    <groupId>hu.blackbelt</groupId>
     <artifactId>idem</artifactId>
-    <name>lofasz</name>
-    <description>lofasz</description>
+    <name>idem</name>
+    <description>idem</description>
     <version>1.0.0-SNAPSHOT</version>
 
     <build>
@@ -41,7 +41,7 @@
 
                 <executions>
                     <execution>
-                        <id>faszom</id>
+                        <id>add-source</id>
                         <goals>
                             <goal>add-source</goal>
                         </goals>
@@ -52,6 +52,59 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.12.1</version>
+  
+                <configuration>
+                    <nodeVersion>v22.0.0</nodeVersion>
+                    <pnpmVersion>10.5.2</pnpmVersion>
+                    <workingDirectory>src/main/resources/hu/blackbelt/idem</workingDirectory>
+                </configuration>
+  
+                <executions>
+                    <execution>
+                        <id>install-node-and-pnpm</id>
+                        <goals>
+                            <goal>install-node-and-pnpm</goal>
+                        </goals>
+                    </execution>
+  
+                <execution>
+                    <id>pnpm-install</id>
+                    <goals>
+                        <goal>pnpm</goal>
+                    </goals>
+                    <configuration>
+                        <arguments>install --frozen-lockfile</arguments>
+                    </configuration>
+                </execution>
+  
+                <execution>
+                    <id>pnpm-test</id>
+                    <goals>
+                        <goal>pnpm</goal>
+                    </goals>
+                    <phase>test</phase>
+                    <configuration>
+                        <arguments>test</arguments>
+                    </configuration>
+                </execution>
+  
+                <execution>
+                    <id>pnpm-build</id>
+                    <goals>
+                        <goal>pnpm</goal>
+                    </goals>
+                    <phase>prepare-package</phase>
+                    <configuration>
+                        <arguments>run build</arguments>
+                    </configuration>
+                </execution>
+              </executions>
             </plugin>
         </plugins>
     </build>
