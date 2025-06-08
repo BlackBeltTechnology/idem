@@ -25,6 +25,7 @@ expression
   | expression Equals expression              #eqExpression
   | expression NEquals expression             #notEqExpression
   | expression And expression                 #andExpression
+  | expression Xor expression                 #xorExpression
   | expression Or expression                  #orExpression
   | expression Implies expression             #impliesExpression
   | expression '?' expression ':' expression  #ternaryExpression
@@ -80,6 +81,7 @@ Yesterday : 'yesterday';
 Tomorrow  : 'tomorrow';
 
 Or        : 'or';
+Xor       : 'xor';
 And       : 'and';
 Equals    : '==';
 NEquals   : '!=';

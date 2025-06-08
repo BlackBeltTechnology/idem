@@ -132,10 +132,11 @@ class ParserTest {
     }
 
     @Test
-    @DisplayName("logical and / or / implies")
+    @DisplayName("logical and / or / xor / implies")
     void logicalAndOr() {
         assertEquals(AstNodeType.And, parse("true and false").getType());
         assertEquals(AstNodeType.Or, parse("true or false").getType());
+        assertEquals(AstNodeType.Xor, parse("true xor false").getType());
         assertEquals(AstNodeType.Implies, parse("true implies false").getType());
     }
 

@@ -121,6 +121,15 @@ public class IdemEvaluatorTest {
         assertEquals(true, evaluate("false implies true"));
         assertEquals(true, evaluate("false implies false"));
     }
+
+    @Test
+    @DisplayName("handles xor operator")
+    void testXor() {
+        assertEquals(true, evaluate("true xor false"));
+        assertEquals(false, evaluate("true xor true"));
+        assertEquals(true, evaluate("false xor true"));
+        assertEquals(false, evaluate("false xor false"));
+    }
     
     @Test
     @DisplayName("handles ternary operator")

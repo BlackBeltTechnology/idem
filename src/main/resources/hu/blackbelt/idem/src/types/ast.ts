@@ -24,6 +24,7 @@ export type AstNodeType =
   | 'Power'
   | 'And'
   | 'Or'
+  | 'Xor'
   | 'Not'
   | 'UnaryMinus'
   | 'Eq'

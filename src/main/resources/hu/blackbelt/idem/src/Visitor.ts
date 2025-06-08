@@ -1,6 +1,7 @@
 import type {
   AddDatePartExpressionContext,
   AddExpressionContext,
+  XorExpressionContext,
   AndExpressionContext,
   BoolExpressionContext,
   DivideExpressionContext,
@@ -201,6 +202,12 @@ export class Visitor extends IdemVisitor<ASTNode> {
 
   visitOrExpression = (ctx: OrExpressionContext): ASTNode => ({
     type: 'Or',
+    left: this.visit(ctx.expression(0) as ExpressionContext),
+    right: this.visit(ctx.expression(1) as ExpressionContext),
+  });
+
+  visitXorExpression = (ctx: XorExpressionContext): ASTNode => ({
+    type: 'Xor',
     left: this.visit(ctx.expression(0) as ExpressionContext),
     right: this.visit(ctx.expression(1) as ExpressionContext),
   });

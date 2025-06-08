@@ -78,6 +78,13 @@ describe('evaluate', () => {
     expect(evalExpr('false implies false')).toBe(true);
   });
 
+  it('handles xor operator', () => {
+    expect(evalExpr('true xor false')).toBe(true);
+    expect(evalExpr('false xor true')).toBe(true);
+    expect(evalExpr('true xor true')).toBe(false);
+    expect(evalExpr('false xor false')).toBe(false);
+  });
+
   it('handles ternary operator', () => {
     expect(evaluate(expressionToAst('1 > 0 ? 10 : 20'), ctx)).toBe(10);
     expect(evaluate(expressionToAst('1 < 0 ? 10 : 20'), ctx)).toBe(20);

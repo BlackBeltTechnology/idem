@@ -88,6 +88,8 @@ public class IdemEvaluator {
                 return (Boolean) evaluate(node.getLeft(), ctx) && (Boolean) evaluate(node.getRight(), ctx);
             case Or:
                 return (Boolean) evaluate(node.getLeft(), ctx) || (Boolean) evaluate(node.getRight(), ctx);
+            case Xor:
+                return (Boolean) evaluate(node.getLeft(), ctx) != (Boolean) evaluate(node.getRight(), ctx);
             case Not:
                 return !(Boolean) evaluate(node.getExpression(), ctx);
             case UnaryMinus:

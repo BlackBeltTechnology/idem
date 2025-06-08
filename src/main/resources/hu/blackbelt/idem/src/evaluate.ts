@@ -60,6 +60,8 @@ export function evaluate(node: ASTNode, ctx?: EvalContext): any {
       return !!evaluate(node.left, ctx) && evaluate(node.right, ctx);
     case 'Or':
       return !!evaluate(node.left, ctx) || evaluate(node.right, ctx);
+    case 'Xor':
+      return !!evaluate(node.left, ctx) !== !!evaluate(node.right, ctx);
     case 'Not':
       return !evaluate(node.expr, ctx);
     case 'UnaryMinus':

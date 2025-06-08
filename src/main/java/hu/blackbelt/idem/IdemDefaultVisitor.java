@@ -392,6 +392,15 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
     }
 
     @Override
+    public AstNode visitXorExpression(IdemParser.XorExpressionContext ctx) {
+        return AstNode.builder()
+                .type(AstNodeType.Xor)
+                .left(this.visitNode(ctx.expression(0)))
+                .right(this.visitNode(ctx.expression(1)))
+                .build();
+    }
+
+    @Override
     public AstNode visitTernaryExpression(IdemParser.TernaryExpressionContext ctx) {
         return AstNode.builder()
                 .type(AstNodeType.Ternary)

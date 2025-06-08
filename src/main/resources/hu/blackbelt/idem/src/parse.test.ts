@@ -77,8 +77,9 @@ describe('Expression → AST', () => {
     expect(expressionToAst('1!=2')).toMatchObject({ type: 'NotEq' });
   });
 
-  it('logical and / or / implies', () => {
+  it('logical and / or / xor / implies', () => {
     expect(expressionToAst('true and false')).toMatchObject({ type: 'And' });
+    expect(expressionToAst('true xor false')).toMatchObject({ type: 'Xor' });
     expect(expressionToAst('true or false')).toMatchObject({ type: 'Or' });
     expect(expressionToAst('false implies true')).toMatchObject({ type: 'Implies' });
   });
