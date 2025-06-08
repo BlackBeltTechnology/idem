@@ -103,8 +103,6 @@ export class IdemParser extends antlr.Parser {
             {
             this.state = 18;
             this.expression(0);
-            this.state = 19;
-            this.match(IdemParser.EOF);
             }
         }
         catch (re) {
@@ -139,7 +137,7 @@ export class IdemParser extends antlr.Parser {
             let alternative: number;
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 45;
+            this.state = 44;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case IdemParser.Self:
@@ -148,9 +146,9 @@ export class IdemParser extends antlr.Parser {
                 this.context = localContext;
                 previousContext = localContext;
 
-                this.state = 22;
+                this.state = 21;
                 this.match(IdemParser.Self);
-                this.state = 23;
+                this.state = 22;
                 this.tags();
                 }
                 break;
@@ -159,9 +157,9 @@ export class IdemParser extends antlr.Parser {
                 localContext = new UnaryMinusExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 24;
+                this.state = 23;
                 this.match(IdemParser.Subtract);
-                this.state = 25;
+                this.state = 24;
                 this.expression(33);
                 }
                 break;
@@ -170,9 +168,9 @@ export class IdemParser extends antlr.Parser {
                 localContext = new NotExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 26;
+                this.state = 25;
                 this.match(IdemParser.Excl);
-                this.state = 27;
+                this.state = 26;
                 this.expression(32);
                 }
                 break;
@@ -181,7 +179,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new NumberExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 28;
+                this.state = 27;
                 this.match(IdemParser.Number);
                 }
                 break;
@@ -190,7 +188,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new BoolExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 29;
+                this.state = 28;
                 this.match(IdemParser.Bool);
                 }
                 break;
@@ -199,7 +197,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new NullExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 30;
+                this.state = 29;
                 this.match(IdemParser.Null);
                 }
                 break;
@@ -208,7 +206,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new ListExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 31;
+                this.state = 30;
                 this.list();
                 }
                 break;
@@ -217,7 +215,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new StringExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 32;
+                this.state = 31;
                 this.match(IdemParser.String);
                 }
                 break;
@@ -226,7 +224,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new LocalDateExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 33;
+                this.state = 32;
                 this.match(IdemParser.LocalDate);
                 }
                 break;
@@ -235,7 +233,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new TimestampExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 34;
+                this.state = 33;
                 this.match(IdemParser.Timestamp);
                 }
                 break;
@@ -244,7 +242,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new TimeExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 35;
+                this.state = 34;
                 this.match(IdemParser.Time);
                 }
                 break;
@@ -253,7 +251,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new TodayExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 36;
+                this.state = 35;
                 this.match(IdemParser.Today);
                 }
                 break;
@@ -262,7 +260,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new YesterdayExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 37;
+                this.state = 36;
                 this.match(IdemParser.Yesterday);
                 }
                 break;
@@ -271,7 +269,7 @@ export class IdemParser extends antlr.Parser {
                 localContext = new TomorrowExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 38;
+                this.state = 37;
                 this.match(IdemParser.Tomorrow);
                 }
                 break;
@@ -280,18 +278,18 @@ export class IdemParser extends antlr.Parser {
                 localContext = new ExpressionExpressionContext(localContext);
                 this.context = localContext;
                 previousContext = localContext;
-                this.state = 39;
+                this.state = 38;
                 this.match(IdemParser.OParen);
-                this.state = 40;
+                this.state = 39;
                 this.expression(0);
-                this.state = 41;
+                this.state = 40;
                 this.match(IdemParser.CParen);
-                this.state = 43;
+                this.state = 42;
                 this.errorHandler.sync(this);
                 switch (this.interpreter.adaptivePredict(this.tokenStream, 0, this.context) ) {
                 case 1:
                     {
-                    this.state = 42;
+                    this.state = 41;
                     this.pointers();
                     }
                     break;
@@ -302,7 +300,7 @@ export class IdemParser extends antlr.Parser {
                 throw new antlr.NoViableAltException(this);
             }
             this.context!.stop = this.tokenStream.LT(-1);
-            this.state = 116;
+            this.state = 115;
             this.errorHandler.sync(this);
             alternative = this.interpreter.adaptivePredict(this.tokenStream, 4, this.context);
             while (alternative !== 2 && alternative !== antlr.ATN.INVALID_ALT_NUMBER) {
@@ -312,20 +310,20 @@ export class IdemParser extends antlr.Parser {
                     }
                     previousContext = localContext;
                     {
-                    this.state = 114;
+                    this.state = 113;
                     this.errorHandler.sync(this);
                     switch (this.interpreter.adaptivePredict(this.tokenStream, 3, this.context) ) {
                     case 1:
                         {
                         localContext = new PowerExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 47;
+                        this.state = 46;
                         if (!(this.precpred(this.context, 31))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 31)");
                         }
-                        this.state = 48;
+                        this.state = 47;
                         this.match(IdemParser.Pow);
-                        this.state = 49;
+                        this.state = 48;
                         this.expression(32);
                         }
                         break;
@@ -333,13 +331,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new MultiplyExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 50;
+                        this.state = 49;
                         if (!(this.precpred(this.context, 29))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 29)");
                         }
-                        this.state = 51;
+                        this.state = 50;
                         this.match(IdemParser.Multiply);
-                        this.state = 52;
+                        this.state = 51;
                         this.expression(30);
                         }
                         break;
@@ -347,13 +345,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new DivideExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 53;
+                        this.state = 52;
                         if (!(this.precpred(this.context, 28))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 28)");
                         }
-                        this.state = 54;
+                        this.state = 53;
                         this.match(IdemParser.Divide);
-                        this.state = 55;
+                        this.state = 54;
                         this.expression(29);
                         }
                         break;
@@ -361,13 +359,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new ModulusExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 56;
+                        this.state = 55;
                         if (!(this.precpred(this.context, 27))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 27)");
                         }
-                        this.state = 57;
+                        this.state = 56;
                         this.match(IdemParser.Modulus);
-                        this.state = 58;
+                        this.state = 57;
                         this.expression(28);
                         }
                         break;
@@ -375,13 +373,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new AddExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 59;
+                        this.state = 58;
                         if (!(this.precpred(this.context, 26))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 26)");
                         }
-                        this.state = 60;
+                        this.state = 59;
                         this.match(IdemParser.Add);
-                        this.state = 61;
+                        this.state = 60;
                         this.expression(27);
                         }
                         break;
@@ -389,13 +387,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new SubtractExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 62;
+                        this.state = 61;
                         if (!(this.precpred(this.context, 25))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 25)");
                         }
-                        this.state = 63;
+                        this.state = 62;
                         this.match(IdemParser.Subtract);
-                        this.state = 64;
+                        this.state = 63;
                         this.expression(26);
                         }
                         break;
@@ -403,13 +401,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new GtEqExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 65;
+                        this.state = 64;
                         if (!(this.precpred(this.context, 22))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 22)");
                         }
-                        this.state = 66;
+                        this.state = 65;
                         this.match(IdemParser.GTEquals);
-                        this.state = 67;
+                        this.state = 66;
                         this.expression(23);
                         }
                         break;
@@ -417,13 +415,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new LtEqExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 68;
+                        this.state = 67;
                         if (!(this.precpred(this.context, 21))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 21)");
                         }
-                        this.state = 69;
+                        this.state = 68;
                         this.match(IdemParser.LTEquals);
-                        this.state = 70;
+                        this.state = 69;
                         this.expression(22);
                         }
                         break;
@@ -431,13 +429,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new GtExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 71;
+                        this.state = 70;
                         if (!(this.precpred(this.context, 20))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 20)");
                         }
-                        this.state = 72;
+                        this.state = 71;
                         this.match(IdemParser.GT);
-                        this.state = 73;
+                        this.state = 72;
                         this.expression(21);
                         }
                         break;
@@ -445,13 +443,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new LtExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 74;
+                        this.state = 73;
                         if (!(this.precpred(this.context, 19))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 19)");
                         }
-                        this.state = 75;
+                        this.state = 74;
                         this.match(IdemParser.LT);
-                        this.state = 76;
+                        this.state = 75;
                         this.expression(20);
                         }
                         break;
@@ -459,13 +457,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new EqExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 77;
+                        this.state = 76;
                         if (!(this.precpred(this.context, 18))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 18)");
                         }
-                        this.state = 78;
+                        this.state = 77;
                         this.match(IdemParser.Equals);
-                        this.state = 79;
+                        this.state = 78;
                         this.expression(19);
                         }
                         break;
@@ -473,13 +471,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new NotEqExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 80;
+                        this.state = 79;
                         if (!(this.precpred(this.context, 17))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 17)");
                         }
-                        this.state = 81;
+                        this.state = 80;
                         this.match(IdemParser.NEquals);
-                        this.state = 82;
+                        this.state = 81;
                         this.expression(18);
                         }
                         break;
@@ -487,13 +485,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new AndExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 83;
+                        this.state = 82;
                         if (!(this.precpred(this.context, 16))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 16)");
                         }
-                        this.state = 84;
+                        this.state = 83;
                         this.match(IdemParser.And);
-                        this.state = 85;
+                        this.state = 84;
                         this.expression(17);
                         }
                         break;
@@ -501,13 +499,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new OrExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 86;
+                        this.state = 85;
                         if (!(this.precpred(this.context, 15))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 15)");
                         }
-                        this.state = 87;
+                        this.state = 86;
                         this.match(IdemParser.Or);
-                        this.state = 88;
+                        this.state = 87;
                         this.expression(16);
                         }
                         break;
@@ -515,17 +513,17 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new TernaryExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 89;
+                        this.state = 88;
                         if (!(this.precpred(this.context, 14))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 14)");
                         }
-                        this.state = 90;
+                        this.state = 89;
                         this.match(IdemParser.QMark);
-                        this.state = 91;
+                        this.state = 90;
                         this.expression(0);
-                        this.state = 92;
+                        this.state = 91;
                         this.match(IdemParser.Colon);
-                        this.state = 93;
+                        this.state = 92;
                         this.expression(15);
                         }
                         break;
@@ -533,13 +531,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new InExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 95;
+                        this.state = 94;
                         if (!(this.precpred(this.context, 13))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 13)");
                         }
-                        this.state = 96;
+                        this.state = 95;
                         this.match(IdemParser.In);
-                        this.state = 97;
+                        this.state = 96;
                         this.expression(14);
                         }
                         break;
@@ -547,27 +545,27 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new PostfixFunctionCallExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 98;
+                        this.state = 97;
                         if (!(this.precpred(this.context, 35))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 35)");
                         }
-                        this.state = 99;
+                        this.state = 98;
                         this.match(IdemParser.Excl);
-                        this.state = 100;
+                        this.state = 99;
                         this.match(IdemParser.Identifier);
-                        this.state = 101;
+                        this.state = 100;
                         this.match(IdemParser.OParen);
-                        this.state = 103;
+                        this.state = 102;
                         this.errorHandler.sync(this);
                         _la = this.tokenStream.LA(1);
                         if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 42500340) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 125) !== 0)) {
                             {
-                            this.state = 102;
+                            this.state = 101;
                             this.exprList();
                             }
                         }
 
-                        this.state = 105;
+                        this.state = 104;
                         this.match(IdemParser.CParen);
                         }
                         break;
@@ -575,11 +573,11 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new IndexedAccessExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 106;
+                        this.state = 105;
                         if (!(this.precpred(this.context, 30))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 30)");
                         }
-                        this.state = 107;
+                        this.state = 106;
                         this.indexes();
                         }
                         break;
@@ -587,13 +585,13 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new AddDatePartExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 108;
+                        this.state = 107;
                         if (!(this.precpred(this.context, 24))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 24)");
                         }
-                        this.state = 109;
+                        this.state = 108;
                         this.match(IdemParser.Add);
-                        this.state = 110;
+                        this.state = 109;
                         this.match(IdemParser.DatePart);
                         }
                         break;
@@ -601,20 +599,20 @@ export class IdemParser extends antlr.Parser {
                         {
                         localContext = new SubtractDatePartExpressionContext(new ExpressionContext(parentContext, parentState));
                         this.pushNewRecursionContext(localContext, _startState, IdemParser.RULE_expression);
-                        this.state = 111;
+                        this.state = 110;
                         if (!(this.precpred(this.context, 23))) {
                             throw this.createFailedPredicateException("this.precpred(this.context, 23)");
                         }
-                        this.state = 112;
+                        this.state = 111;
                         this.match(IdemParser.Subtract);
-                        this.state = 113;
+                        this.state = 112;
                         this.match(IdemParser.DatePart);
                         }
                         break;
                     }
                     }
                 }
-                this.state = 118;
+                this.state = 117;
                 this.errorHandler.sync(this);
                 alternative = this.interpreter.adaptivePredict(this.tokenStream, 4, this.context);
             }
@@ -640,19 +638,19 @@ export class IdemParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 119;
+            this.state = 118;
             this.match(IdemParser.OBracket);
-            this.state = 121;
+            this.state = 120;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 42500340) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 125) !== 0)) {
                 {
-                this.state = 120;
+                this.state = 119;
                 this.exprList();
                 }
             }
 
-            this.state = 123;
+            this.state = 122;
             this.match(IdemParser.CBracket);
             }
         }
@@ -676,7 +674,7 @@ export class IdemParser extends antlr.Parser {
             let alternative: number;
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 129;
+            this.state = 128;
             this.errorHandler.sync(this);
             alternative = 1;
             do {
@@ -684,11 +682,11 @@ export class IdemParser extends antlr.Parser {
                 case 1:
                     {
                     {
-                    this.state = 125;
+                    this.state = 124;
                     this.match(IdemParser.OBracket);
-                    this.state = 126;
+                    this.state = 125;
                     this.expression(0);
-                    this.state = 127;
+                    this.state = 126;
                     this.match(IdemParser.CBracket);
                     }
                     }
@@ -696,7 +694,7 @@ export class IdemParser extends antlr.Parser {
                 default:
                     throw new antlr.NoViableAltException(this);
                 }
-                this.state = 131;
+                this.state = 130;
                 this.errorHandler.sync(this);
                 alternative = this.interpreter.adaptivePredict(this.tokenStream, 6, this.context);
             } while (alternative !== 2 && alternative !== antlr.ATN.INVALID_ALT_NUMBER);
@@ -722,7 +720,7 @@ export class IdemParser extends antlr.Parser {
             let alternative: number;
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 134;
+            this.state = 133;
             this.errorHandler.sync(this);
             alternative = 1;
             do {
@@ -730,7 +728,7 @@ export class IdemParser extends antlr.Parser {
                 case 1:
                     {
                     {
-                    this.state = 133;
+                    this.state = 132;
                     this.pointer();
                     }
                     }
@@ -738,7 +736,7 @@ export class IdemParser extends antlr.Parser {
                 default:
                     throw new antlr.NoViableAltException(this);
                 }
-                this.state = 136;
+                this.state = 135;
                 this.errorHandler.sync(this);
                 alternative = this.interpreter.adaptivePredict(this.tokenStream, 7, this.context);
             } while (alternative !== 2 && alternative !== antlr.ATN.INVALID_ALT_NUMBER);
@@ -761,20 +759,20 @@ export class IdemParser extends antlr.Parser {
         let localContext = new PointerContext(this.context, this.state);
         this.enterRule(localContext, 10, IdemParser.RULE_pointer);
         try {
-            this.state = 140;
+            this.state = 139;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case IdemParser.T__0:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 138;
+                this.state = 137;
                 this.tags();
                 }
                 break;
             case IdemParser.OBracket:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 139;
+                this.state = 138;
                 this.indexes();
                 }
                 break;
@@ -802,7 +800,7 @@ export class IdemParser extends antlr.Parser {
             let alternative: number;
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 144;
+            this.state = 143;
             this.errorHandler.sync(this);
             alternative = 1;
             do {
@@ -810,9 +808,9 @@ export class IdemParser extends antlr.Parser {
                 case 1:
                     {
                     {
-                    this.state = 142;
+                    this.state = 141;
                     this.match(IdemParser.T__0);
-                    this.state = 143;
+                    this.state = 142;
                     this.feature();
                     }
                     }
@@ -820,7 +818,7 @@ export class IdemParser extends antlr.Parser {
                 default:
                     throw new antlr.NoViableAltException(this);
                 }
-                this.state = 146;
+                this.state = 145;
                 this.errorHandler.sync(this);
                 alternative = this.interpreter.adaptivePredict(this.tokenStream, 9, this.context);
             } while (alternative !== 2 && alternative !== antlr.ATN.INVALID_ALT_NUMBER);
@@ -845,7 +843,7 @@ export class IdemParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 148;
+            this.state = 147;
             this.match(IdemParser.Identifier);
             }
         }
@@ -869,21 +867,21 @@ export class IdemParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 150;
+            this.state = 149;
             this.expression(0);
-            this.state = 155;
+            this.state = 154;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             while (_la === 29) {
                 {
                 {
-                this.state = 151;
+                this.state = 150;
                 this.match(IdemParser.Comma);
-                this.state = 152;
+                this.state = 151;
                 this.expression(0);
                 }
                 }
-                this.state = 157;
+                this.state = 156;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
@@ -957,64 +955,64 @@ export class IdemParser extends antlr.Parser {
     }
 
     public static readonly _serializedATN: number[] = [
-        4,1,40,159,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
-        6,2,7,7,7,2,8,7,8,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,44,8,1,
-        3,1,46,8,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        4,1,40,158,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        6,2,7,7,7,2,8,7,8,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,43,8,1,3,1,
+        45,8,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,104,8,1,1,1,1,1,1,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,5,1,115,8,1,10,1,12,1,118,9,1,1,2,1,2,
-        3,2,122,8,2,1,2,1,2,1,3,1,3,1,3,1,3,4,3,130,8,3,11,3,12,3,131,1,
-        4,4,4,135,8,4,11,4,12,4,136,1,5,1,5,3,5,141,8,5,1,6,1,6,4,6,145,
-        8,6,11,6,12,6,146,1,7,1,7,1,8,1,8,1,8,5,8,154,8,8,10,8,12,8,157,
-        9,8,1,8,0,1,2,9,0,2,4,6,8,10,12,14,16,0,0,191,0,18,1,0,0,0,2,45,
-        1,0,0,0,4,119,1,0,0,0,6,129,1,0,0,0,8,134,1,0,0,0,10,140,1,0,0,0,
-        12,144,1,0,0,0,14,148,1,0,0,0,16,150,1,0,0,0,18,19,3,2,1,0,19,20,
-        5,0,0,1,20,1,1,0,0,0,21,22,6,1,-1,0,22,23,5,2,0,0,23,46,3,12,6,0,
-        24,25,5,19,0,0,25,46,3,2,1,33,26,27,5,15,0,0,27,46,3,2,1,32,28,46,
-        5,34,0,0,29,46,5,32,0,0,30,46,5,4,0,0,31,46,3,4,2,0,32,46,5,35,0,
-        0,33,46,5,36,0,0,34,46,5,37,0,0,35,46,5,38,0,0,36,46,5,5,0,0,37,
-        46,5,6,0,0,38,46,5,7,0,0,39,40,5,25,0,0,40,41,3,2,1,0,41,43,5,26,
-        0,0,42,44,3,8,4,0,43,42,1,0,0,0,43,44,1,0,0,0,44,46,1,0,0,0,45,21,
-        1,0,0,0,45,24,1,0,0,0,45,26,1,0,0,0,45,28,1,0,0,0,45,29,1,0,0,0,
-        45,30,1,0,0,0,45,31,1,0,0,0,45,32,1,0,0,0,45,33,1,0,0,0,45,34,1,
-        0,0,0,45,35,1,0,0,0,45,36,1,0,0,0,45,37,1,0,0,0,45,38,1,0,0,0,45,
-        39,1,0,0,0,46,116,1,0,0,0,47,48,10,31,0,0,48,49,5,14,0,0,49,115,
-        3,2,1,32,50,51,10,29,0,0,51,52,5,20,0,0,52,115,3,2,1,30,53,54,10,
-        28,0,0,54,55,5,21,0,0,55,115,3,2,1,29,56,57,10,27,0,0,57,58,5,22,
-        0,0,58,115,3,2,1,28,59,60,10,26,0,0,60,61,5,18,0,0,61,115,3,2,1,
-        27,62,63,10,25,0,0,63,64,5,19,0,0,64,115,3,2,1,26,65,66,10,22,0,
-        0,66,67,5,12,0,0,67,115,3,2,1,23,68,69,10,21,0,0,69,70,5,13,0,0,
-        70,115,3,2,1,22,71,72,10,20,0,0,72,73,5,16,0,0,73,115,3,2,1,21,74,
-        75,10,19,0,0,75,76,5,17,0,0,76,115,3,2,1,20,77,78,10,18,0,0,78,79,
-        5,10,0,0,79,115,3,2,1,19,80,81,10,17,0,0,81,82,5,11,0,0,82,115,3,
-        2,1,18,83,84,10,16,0,0,84,85,5,9,0,0,85,115,3,2,1,17,86,87,10,15,
-        0,0,87,88,5,8,0,0,88,115,3,2,1,16,89,90,10,14,0,0,90,91,5,30,0,0,
-        91,92,3,2,1,0,92,93,5,31,0,0,93,94,3,2,1,15,94,115,1,0,0,0,95,96,
-        10,13,0,0,96,97,5,3,0,0,97,115,3,2,1,14,98,99,10,35,0,0,99,100,5,
-        15,0,0,100,101,5,33,0,0,101,103,5,25,0,0,102,104,3,16,8,0,103,102,
-        1,0,0,0,103,104,1,0,0,0,104,105,1,0,0,0,105,115,5,26,0,0,106,107,
-        10,30,0,0,107,115,3,6,3,0,108,109,10,24,0,0,109,110,5,18,0,0,110,
-        115,5,39,0,0,111,112,10,23,0,0,112,113,5,19,0,0,113,115,5,39,0,0,
-        114,47,1,0,0,0,114,50,1,0,0,0,114,53,1,0,0,0,114,56,1,0,0,0,114,
-        59,1,0,0,0,114,62,1,0,0,0,114,65,1,0,0,0,114,68,1,0,0,0,114,71,1,
-        0,0,0,114,74,1,0,0,0,114,77,1,0,0,0,114,80,1,0,0,0,114,83,1,0,0,
-        0,114,86,1,0,0,0,114,89,1,0,0,0,114,95,1,0,0,0,114,98,1,0,0,0,114,
-        106,1,0,0,0,114,108,1,0,0,0,114,111,1,0,0,0,115,118,1,0,0,0,116,
-        114,1,0,0,0,116,117,1,0,0,0,117,3,1,0,0,0,118,116,1,0,0,0,119,121,
-        5,23,0,0,120,122,3,16,8,0,121,120,1,0,0,0,121,122,1,0,0,0,122,123,
-        1,0,0,0,123,124,5,24,0,0,124,5,1,0,0,0,125,126,5,23,0,0,126,127,
-        3,2,1,0,127,128,5,24,0,0,128,130,1,0,0,0,129,125,1,0,0,0,130,131,
-        1,0,0,0,131,129,1,0,0,0,131,132,1,0,0,0,132,7,1,0,0,0,133,135,3,
-        10,5,0,134,133,1,0,0,0,135,136,1,0,0,0,136,134,1,0,0,0,136,137,1,
-        0,0,0,137,9,1,0,0,0,138,141,3,12,6,0,139,141,3,6,3,0,140,138,1,0,
-        0,0,140,139,1,0,0,0,141,11,1,0,0,0,142,143,5,1,0,0,143,145,3,14,
-        7,0,144,142,1,0,0,0,145,146,1,0,0,0,146,144,1,0,0,0,146,147,1,0,
-        0,0,147,13,1,0,0,0,148,149,5,33,0,0,149,15,1,0,0,0,150,155,3,2,1,
-        0,151,152,5,29,0,0,152,154,3,2,1,0,153,151,1,0,0,0,154,157,1,0,0,
-        0,155,153,1,0,0,0,155,156,1,0,0,0,156,17,1,0,0,0,157,155,1,0,0,0,
-        11,43,45,103,114,116,121,131,136,140,146,155
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,103,8,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,5,1,114,8,1,10,1,12,1,117,9,1,1,2,1,2,3,2,
+        121,8,2,1,2,1,2,1,3,1,3,1,3,1,3,4,3,129,8,3,11,3,12,3,130,1,4,4,
+        4,134,8,4,11,4,12,4,135,1,5,1,5,3,5,140,8,5,1,6,1,6,4,6,144,8,6,
+        11,6,12,6,145,1,7,1,7,1,8,1,8,1,8,5,8,153,8,8,10,8,12,8,156,9,8,
+        1,8,0,1,2,9,0,2,4,6,8,10,12,14,16,0,0,190,0,18,1,0,0,0,2,44,1,0,
+        0,0,4,118,1,0,0,0,6,128,1,0,0,0,8,133,1,0,0,0,10,139,1,0,0,0,12,
+        143,1,0,0,0,14,147,1,0,0,0,16,149,1,0,0,0,18,19,3,2,1,0,19,1,1,0,
+        0,0,20,21,6,1,-1,0,21,22,5,2,0,0,22,45,3,12,6,0,23,24,5,19,0,0,24,
+        45,3,2,1,33,25,26,5,15,0,0,26,45,3,2,1,32,27,45,5,34,0,0,28,45,5,
+        32,0,0,29,45,5,4,0,0,30,45,3,4,2,0,31,45,5,35,0,0,32,45,5,36,0,0,
+        33,45,5,37,0,0,34,45,5,38,0,0,35,45,5,5,0,0,36,45,5,6,0,0,37,45,
+        5,7,0,0,38,39,5,25,0,0,39,40,3,2,1,0,40,42,5,26,0,0,41,43,3,8,4,
+        0,42,41,1,0,0,0,42,43,1,0,0,0,43,45,1,0,0,0,44,20,1,0,0,0,44,23,
+        1,0,0,0,44,25,1,0,0,0,44,27,1,0,0,0,44,28,1,0,0,0,44,29,1,0,0,0,
+        44,30,1,0,0,0,44,31,1,0,0,0,44,32,1,0,0,0,44,33,1,0,0,0,44,34,1,
+        0,0,0,44,35,1,0,0,0,44,36,1,0,0,0,44,37,1,0,0,0,44,38,1,0,0,0,45,
+        115,1,0,0,0,46,47,10,31,0,0,47,48,5,14,0,0,48,114,3,2,1,32,49,50,
+        10,29,0,0,50,51,5,20,0,0,51,114,3,2,1,30,52,53,10,28,0,0,53,54,5,
+        21,0,0,54,114,3,2,1,29,55,56,10,27,0,0,56,57,5,22,0,0,57,114,3,2,
+        1,28,58,59,10,26,0,0,59,60,5,18,0,0,60,114,3,2,1,27,61,62,10,25,
+        0,0,62,63,5,19,0,0,63,114,3,2,1,26,64,65,10,22,0,0,65,66,5,12,0,
+        0,66,114,3,2,1,23,67,68,10,21,0,0,68,69,5,13,0,0,69,114,3,2,1,22,
+        70,71,10,20,0,0,71,72,5,16,0,0,72,114,3,2,1,21,73,74,10,19,0,0,74,
+        75,5,17,0,0,75,114,3,2,1,20,76,77,10,18,0,0,77,78,5,10,0,0,78,114,
+        3,2,1,19,79,80,10,17,0,0,80,81,5,11,0,0,81,114,3,2,1,18,82,83,10,
+        16,0,0,83,84,5,9,0,0,84,114,3,2,1,17,85,86,10,15,0,0,86,87,5,8,0,
+        0,87,114,3,2,1,16,88,89,10,14,0,0,89,90,5,30,0,0,90,91,3,2,1,0,91,
+        92,5,31,0,0,92,93,3,2,1,15,93,114,1,0,0,0,94,95,10,13,0,0,95,96,
+        5,3,0,0,96,114,3,2,1,14,97,98,10,35,0,0,98,99,5,15,0,0,99,100,5,
+        33,0,0,100,102,5,25,0,0,101,103,3,16,8,0,102,101,1,0,0,0,102,103,
+        1,0,0,0,103,104,1,0,0,0,104,114,5,26,0,0,105,106,10,30,0,0,106,114,
+        3,6,3,0,107,108,10,24,0,0,108,109,5,18,0,0,109,114,5,39,0,0,110,
+        111,10,23,0,0,111,112,5,19,0,0,112,114,5,39,0,0,113,46,1,0,0,0,113,
+        49,1,0,0,0,113,52,1,0,0,0,113,55,1,0,0,0,113,58,1,0,0,0,113,61,1,
+        0,0,0,113,64,1,0,0,0,113,67,1,0,0,0,113,70,1,0,0,0,113,73,1,0,0,
+        0,113,76,1,0,0,0,113,79,1,0,0,0,113,82,1,0,0,0,113,85,1,0,0,0,113,
+        88,1,0,0,0,113,94,1,0,0,0,113,97,1,0,0,0,113,105,1,0,0,0,113,107,
+        1,0,0,0,113,110,1,0,0,0,114,117,1,0,0,0,115,113,1,0,0,0,115,116,
+        1,0,0,0,116,3,1,0,0,0,117,115,1,0,0,0,118,120,5,23,0,0,119,121,3,
+        16,8,0,120,119,1,0,0,0,120,121,1,0,0,0,121,122,1,0,0,0,122,123,5,
+        24,0,0,123,5,1,0,0,0,124,125,5,23,0,0,125,126,3,2,1,0,126,127,5,
+        24,0,0,127,129,1,0,0,0,128,124,1,0,0,0,129,130,1,0,0,0,130,128,1,
+        0,0,0,130,131,1,0,0,0,131,7,1,0,0,0,132,134,3,10,5,0,133,132,1,0,
+        0,0,134,135,1,0,0,0,135,133,1,0,0,0,135,136,1,0,0,0,136,9,1,0,0,
+        0,137,140,3,12,6,0,138,140,3,6,3,0,139,137,1,0,0,0,139,138,1,0,0,
+        0,140,11,1,0,0,0,141,142,5,1,0,0,142,144,3,14,7,0,143,141,1,0,0,
+        0,144,145,1,0,0,0,145,143,1,0,0,0,145,146,1,0,0,0,146,13,1,0,0,0,
+        147,148,5,33,0,0,148,15,1,0,0,0,149,154,3,2,1,0,150,151,5,29,0,0,
+        151,153,3,2,1,0,152,150,1,0,0,0,153,156,1,0,0,0,154,152,1,0,0,0,
+        154,155,1,0,0,0,155,17,1,0,0,0,156,154,1,0,0,0,11,42,44,102,113,
+        115,120,130,135,139,145,154
     ];
 
     private static __ATN: antlr.ATN;
@@ -1042,9 +1040,6 @@ export class ParseContext extends antlr.ParserRuleContext {
     }
     public expression(): ExpressionContext {
         return this.getRuleContext(0, ExpressionContext)!;
-    }
-    public EOF(): antlr.TerminalNode {
-        return this.getToken(IdemParser.EOF, 0)!;
     }
     public override get ruleIndex(): number {
         return IdemParser.RULE_parse;

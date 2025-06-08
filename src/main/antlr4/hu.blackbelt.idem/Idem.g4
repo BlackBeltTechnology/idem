@@ -1,7 +1,7 @@
 grammar Idem;
 
 parse
-  : expression EOF
+  : expression
   ;
 
 expression

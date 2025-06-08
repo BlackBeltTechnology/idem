@@ -47,13 +47,21 @@ describe('Expression → AST', () => {
   });
 
   it('add / subtract DatePart', () => {
-    expect(expressionToAst('4+10D')).toMatchObject({
+    expect(expressionToAst('2023-12-31+10D')).toMatchObject({
       type: 'AddDatePart',
-      datepart: '10D',
+      left: {
+        type: 'LocalDate',
+        value: '2023-12-31',
+      },
+      datePart: '10D',
     });
-    expect(expressionToAst('5-2Y')).toMatchObject({
+    expect(expressionToAst('2023-12-31-2Y')).toMatchObject({
       type: 'SubtractDatePart',
-      datepart: '2Y',
+      left: {
+        type: 'LocalDate',
+        value: '2023-12-31',
+      },
+      datePart: '2Y',
     });
   });
 
@@ -116,8 +124,7 @@ describe('Expression → AST', () => {
 
     const acc = expressionToAst('[10,20][1]');
     expect(acc).toMatchObject({
-      type: 'ListAccess',
-      list: { type: 'List' },
+      type: 'IndexAccess',
       indexes: {
         type: 'Indexes',
         elements: [{ type: 'Number', value: 1 }],
@@ -131,12 +138,9 @@ describe('Expression → AST', () => {
 
     const sacc = expressionToAst(`'ok'[0]`);
     expect(sacc).toMatchObject({
-      type: 'StringAccess',
-      value: 'ok',
-      indexes: {
-        type: 'Indexes',
-        elements: [{ type: 'Number', value: 0 }],
-      },
+      type: 'IndexAccess',
+      expr: { type: 'String', value: 'ok' },
+      indexes: { elements: [{ type: 'Number', value: 0 }] },
     });
   });
 
@@ -247,6 +251,66 @@ describe('Expression → AST', () => {
         right: { type: 'Self', tags: { features: ['b'], type: 'Tags' } },
       },
       right: { type: 'Self', tags: { features: ['c'], type: 'Tags' } },
+    });
+  });
+
+  it('parses a postfix function call', () => {
+    const ast = expressionToAst("self.items!size()");
+    expect(ast).toMatchObject({
+      type: 'PostfixFunctionCall',
+      expr: { type: 'Self', tags: { features: ['items'] } },
+      functionName: 'size',
+      args: [],
+    });
+  });
+
+  it('parses a postfix function call with args', () => {
+    const ast = expressionToAst("123!round(2)");
+    expect(ast).toMatchObject({
+      type: 'PostfixFunctionCall',
+      expr: { type: 'Number', value: 123 },
+      functionName: 'round',
+      args: [{ type: 'Number', value: 2 }],
+    });
+  });
+
+  it('parses new literal types', () => {
+    expect(expressionToAst('2025-01-01T12:00:00')).toMatchObject({ type: 'Timestamp' });
+    expect(expressionToAst('14:30')).toMatchObject({ type: 'Time' });
+  });
+
+  it('parses new keywords', () => {
+    expect(expressionToAst('today')).toMatchObject({ type: 'Today' });
+    expect(expressionToAst('yesterday')).toMatchObject({ type: 'Yesterday' });
+    expect(expressionToAst('tomorrow')).toMatchObject({ type: 'Tomorrow' });
+  });
+
+  it('parses string literal and index access', () => {
+    const ast = expressionToAst(`'ok'[0]`);
+    expect(ast).toMatchObject({
+      type: 'IndexAccess',
+      expr: { type: 'String', value: 'ok' },
+      indexes: {
+        type: 'Indexes',
+        elements: [{ type: 'Number', value: 0 }],
+      },
+    });
+  });
+
+  it('parses list literal and index access', () => {
+    const ast = expressionToAst(`[1,2][0]`);
+    expect(ast).toMatchObject({
+      type: 'IndexAccess',
+      expr: { type: 'List' },
+      indexes: { elements: [{ type: 'Number', value: 0 }] },
+    });
+  });
+
+  it('parses self-expression with tags', () => {
+    const ast = expressionToAst('self.foo.bar');
+    expect(ast).toMatchObject({
+      type: 'Self',
+      tags: { features: ['foo', 'bar'] },
     });
   });
 });

@@ -1,9 +1,21 @@
 export type AstNodeType =
+  // Primitives & Literals
   | 'Number'
   | 'Boolean'
   | 'Null'
-  | 'LocalDate'
+  | 'String'
+  | 'List'
   | 'Self'
+
+  // Date/Time Literals & Keywords
+  | 'LocalDate'
+  | 'Timestamp'
+  | 'Time'
+  | 'Today'
+  | 'Yesterday'
+  | 'Tomorrow'
+
+  // Expressions
   | 'Add'
   | 'Subtract'
   | 'Multiply'
@@ -22,17 +34,18 @@ export type AstNodeType =
   | 'Lte'
   | 'Ternary'
   | 'In'
-  | 'List'
-  | 'ListAccess'
+  | 'AddDatePart'
+  | 'SubtractDatePart'
+  | 'IndexAccess'
+  | 'PointerAccess'
+
+  // New Postfix Call
+  | 'PostfixFunctionCall'
+
+  // Internal helper types
   | 'Block'
   | 'ExprList'
   | 'Indexes'
   | 'Index'
   | 'Pointers'
-  | 'Tags'
-  | 'IndexAccess'
-  | 'String'
-  | 'StringAccess'
-  | 'PointerAccess'
-  | 'AddDatePart'
-  | 'SubtractDatePart';
+  | 'Tags';
