@@ -8,11 +8,9 @@ import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled
 class ParserTest {
 
     private AstNode parse(String expression) {
@@ -24,7 +22,7 @@ class ParserTest {
     void logicalTrue() {
         AstNode ast = parse("true");
         assertEquals(AstNodeType.Boolean, ast.getType());
-        assertTrue((Boolean) ((Optional) ast.getValue()).get());
+        assertTrue((Boolean) ast.getValue());
     }
 
     @Test
@@ -32,7 +30,7 @@ class ParserTest {
     void logicalFalse() {
         AstNode ast = parse("false");
         assertEquals(AstNodeType.Boolean, ast.getType());
-        assertFalse((Boolean) ((Optional) ast.getValue()).get());
+        assertFalse((Boolean) ast.getValue());
     }
 
     @Test
@@ -73,7 +71,7 @@ class ParserTest {
         AstNode expr = ast.getExpression();
         assertNotNull(expr);
         assertEquals(AstNodeType.Boolean, expr.getType());
-        assertTrue((Boolean) ((Optional) expr.getValue()).get());
+        assertTrue((Boolean) expr.getValue());
     }
 
     @Test
@@ -172,7 +170,7 @@ class ParserTest {
     void booleanAndNull() {
         AstNode expectedFalse = AstNode.builder()
                 .type(AstNodeType.Boolean)
-                .value(Optional.of(false))
+                .value(false)
                 .build();
         assertEquals(expectedFalse, parse("false"));
 

@@ -4,6 +4,7 @@ package hu.blackbelt.idem;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.util.Collection;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
 @Builder
 @Getter
 @EqualsAndHashCode
+@ToString
 public class AstNode {
     AstNodeType type;
     Object value;

@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -33,11 +32,7 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
 
     @Override
     public AstNode visitParse(IdemParser.ParseContext ctx) {
-        if (ctx.block() != null) {
-            return visitBlock(ctx.block());
-        } else {
-            throw new IllegalArgumentException("Parser root have to be block");
-        }
+        return visitNode(ctx.block());
     }
 
     @Override
@@ -80,7 +75,7 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
     public AstNode visitBoolExpression(IdemParser.BoolExpressionContext ctx) {
         return AstNode.builder()
                 .type(AstNodeType.Boolean)
-                .value(Optional.of(ctx.getText() == null ? false : Boolean.valueOf(ctx.getText().toLowerCase())))
+                .value(ctx.getText() == null ? false : Boolean.valueOf(ctx.getText().toLowerCase()))
                 .build();
     }
 
@@ -401,11 +396,4 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
                 .right(this.visitNode(ctx.expression(1)))
                 .build();
     }
-
-    @Override
-    public Object visitFeature(IdemParser.FeatureContext ctx) {
-        System.out.println("FEATURE: " + ctx.getText());
-        return super.visitFeature(ctx);
-    }
-
 }

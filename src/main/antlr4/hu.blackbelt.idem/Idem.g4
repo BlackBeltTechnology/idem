@@ -9,47 +9,47 @@ block
  ;
 
 functionCall
- : Floor '(' expression  ',' expression ')'        #floorFunctionCall
- | Ceil '(' expression  ',' expression ')'         #ceilFunctionCall
- | Round '(' expression ',' expression ')'         #roundFunctionCall
- | Size '(' expression ')'                         #sizeFunctionCall
- | DayDiff '(' expression ',' expression ')'       #dayDiffFunctionCall
- | WeekDiff '(' expression ',' expression ')'      #weekDiffFunctionCall
- | MonthDiff '(' expression ',' expression ')'     #monthDiffFunctionCall
- | YearDiff '(' expression ',' expression ')'      #yearDiffFunctionCall
- | Year        '(' expression ')'                  #yearFunctionCall
- | DayOfYear   '(' expression ')'                  #dayOfYearFunctionCall
- | WeekOfYear  '(' expression ')'                  #weekOfYearFunctionCall
- | MonthOfYear '(' expression ')'                  #monthOfYearFunctionCall
- | DayOfMonth  '(' expression ')'                  #dayOfMonthFunctionCall
- | WeekOfMonth '(' expression ')'                  #weekOfMonthFunctionCall
- | DayOfWeek   '(' expression ')'                  #dayOfWeekFunctionCall
- | Today '(' ')'                                   #todayFunctionCall
- | Yesterday '(' ')'                               #yesterdayFunctionCall
- | Tomorrow '(' ')'                                #tomorrowFunctionCall
- | BoolToInt '(' expression ')'                    #boolToIntFunctionCall
+ : Floor OParen expression  ',' expression CParen        #floorFunctionCall
+ | Ceil OParen expression  ',' expression CParen         #ceilFunctionCall
+ | Round OParen expression ',' expression CParen         #roundFunctionCall
+ | Size OParen expression CParen                         #sizeFunctionCall
+ | DayDiff OParen expression ',' expression CParen       #dayDiffFunctionCall
+ | WeekDiff OParen expression ',' expression CParen      #weekDiffFunctionCall
+ | MonthDiff OParen expression ',' expression CParen     #monthDiffFunctionCall
+ | YearDiff OParen expression ',' expression CParen      #yearDiffFunctionCall
+ | Year        OParen expression CParen                  #yearFunctionCall
+ | DayOfYear   OParen expression CParen                  #dayOfYearFunctionCall
+ | WeekOfYear  OParen expression CParen                  #weekOfYearFunctionCall
+ | MonthOfYear OParen expression CParen                  #monthOfYearFunctionCall
+ | DayOfMonth  OParen expression CParen                  #dayOfMonthFunctionCall
+ | WeekOfMonth OParen expression CParen                  #weekOfMonthFunctionCall
+ | DayOfWeek   OParen expression CParen                  #dayOfWeekFunctionCall
+ | Today OParen CParen                                   #todayFunctionCall
+ | Yesterday OParen CParen                               #yesterdayFunctionCall
+ | Tomorrow OParen CParen                                #tomorrowFunctionCall
+ | BoolToInt OParen expression CParen                    #boolToIntFunctionCall
  ;
 
 expression
- : 'self' tags                              #selfExpression
- | '-' expression                           #unaryMinusExpression
- | '!' expression                           #notExpression
- | expression '^' expression                #powerExpression
- | expression '*' expression                #multiplyExpression
- | expression '/' expression                #divideExpression
- | expression '%' expression                #modulusExpression
- | expression '+' expression                #addExpression
- | expression '-' expression                #subtractExpression
- | expression '+' DatePart                  #addDatePartExpression
- | expression '-' DatePart                  #subtractDatePartExpression
- | expression '>=' expression               #gtEqExpression
- | expression '<=' expression               #ltEqExpression
- | expression '>' expression                #gtExpression
- | expression '<' expression                #ltExpression
- | expression '==' expression               #eqExpression
- | expression '!=' expression               #notEqExpression
- | expression '&&' expression               #andExpression
- | expression '||' expression               #orExpression
+ : Self tags                                #selfExpression
+ | Subtract expression                      #unaryMinusExpression
+ | Excl expression                          #notExpression
+ | expression Pow expression                #powerExpression
+ | expression Multiply expression           #multiplyExpression
+ | expression Divide expression             #divideExpression
+ | expression Modulus expression            #modulusExpression
+ | expression Add expression                #addExpression
+ | expression Subtract expression           #subtractExpression
+ | expression Add DatePart                  #addDatePartExpression
+ | expression Subtract DatePart             #subtractDatePartExpression
+ | expression GTEquals expression           #gtEqExpression
+ | expression LTEquals expression           #ltEqExpression
+ | expression GT expression                 #gtExpression
+ | expression LT expression                 #ltExpression
+ | expression Equals expression             #eqExpression
+ | expression NEquals expression            #notEqExpression
+ | expression And expression                #andExpression
+ | expression Or expression                 #orExpression
  | expression '?' expression ':' expression #ternaryExpression
  | expression In expression                 #inExpression
  | Number                                   #numberExpression
@@ -58,7 +58,7 @@ expression
  | Null                                     #nullExpression
  | list indexes?                            #listExpression
  | String indexes?                          #stringExpression
- | '(' expression ')'pointers?              #expressionExpression
+ | OParen expression CParen pointers?       #expressionExpression
  ;
 
 
@@ -95,6 +95,7 @@ exprList
  : expression (',' expression)*
  ;
 
+Self     : 'self';
 Size     : 'size';
 In       : 'in';
 Null     : 'null';
