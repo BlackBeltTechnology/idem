@@ -96,18 +96,18 @@ Size     : 'size';
 In       : 'in';
 Null     : 'null';
 
-DayDiff    : 'day_diff';
-WeekDiff   : 'week_diff';
-MonthDiff  : 'month_diff';
-YearDiff   : 'year_diff';
+DayDiff    : 'dayDiff';
+WeekDiff   : 'weekDiff';
+MonthDiff  : 'monthDiff';
+YearDiff   : 'yearDiff';
 
 Year        : 'year';
-DayOfYear   : 'day_of_year';
-WeekOfYear  : 'week_of_year';
-MonthOfYear : 'month_of_year';
-DayOfMonth  : 'day_of_month';
-WeekOfMonth : 'week_of_month';
-DayOfWeek   : 'day_of_week';
+DayOfYear   : 'dayOfYear';
+WeekOfYear  : 'weekOfYear';
+MonthOfYear : 'monthOfYear';
+DayOfMonth  : 'dayOfMonth';
+WeekOfMonth : 'weekOfMonth';
+DayOfWeek   : 'dayOfWeek';
 Today       : 'today';
 Yesterday   : 'yesterday';
 Tomorrow    : 'tomorrow';

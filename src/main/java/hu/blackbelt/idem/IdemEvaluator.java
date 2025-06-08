@@ -2,13 +2,18 @@ package hu.blackbelt.idem;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class IdemEvaluator {
+    private static final Pattern DATE_PART_PATTERN = Pattern.compile("([0-9]+)([DdWwMmYy])");
 
     private static Object getFeatureValue(Map<String, Object> ctx, List<String> features) {
         if (features.size() == 0) {
@@ -201,10 +206,89 @@ public class IdemEvaluator {
                 return base;
             }
 
-
+            // FUNCTION IMPLEMENTATIONS
+            case Floor: {
+                BigDecimal value = toBigDecimal(evaluate(node.getElements().get(0), ctx));
+                int precision = toBigDecimal(evaluate(node.getElements().get(1), ctx)).intValue();
+                return value.setScale(precision, RoundingMode.FLOOR);
+            }
+            case Ceil: {
+                BigDecimal value = toBigDecimal(evaluate(node.getElements().get(0), ctx));
+                int precision = toBigDecimal(evaluate(node.getElements().get(1), ctx)).intValue();
+                return value.setScale(precision, RoundingMode.CEILING);
+            }
+            case Round: {
+                BigDecimal value = toBigDecimal(evaluate(node.getElements().get(0), ctx));
+                int precision = toBigDecimal(evaluate(node.getElements().get(1), ctx)).intValue();
+                return value.setScale(precision, RoundingMode.HALF_UP);
+            }
+            case Size: {
+                Object obj = evaluate(node.getExpression(), ctx);
+                if (obj instanceof String) return new BigDecimal(((String) obj).length());
+                if (obj instanceof Collection) return new BigDecimal(((Collection<?>) obj).size());
+                if (obj instanceof Map) return new BigDecimal(((Map<?, ?>) obj).size());
+                throw new IllegalArgumentException("size() can only be called on String, Collection, or Map.");
+            }
+            case BoolToInt: {
+                return (Boolean) evaluate(node.getExpression(), ctx) ? BigDecimal.ONE : BigDecimal.ZERO;
+            }
+            case Today:
+                return truncateTime(new Date());
+            case Yesterday: {
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(truncateTime(new Date()));
+                cal.add(Calendar.DATE, -1);
+                return cal.getTime();
+            }
+            case Tomorrow: {
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(truncateTime(new Date()));
+                cal.add(Calendar.DATE, 1);
+                return cal.getTime();
+            }
+            case DayDiff: {
+                LocalDate date1 = toLocalDate(evaluate(node.getElements().get(0), ctx));
+                LocalDate date2 = toLocalDate(evaluate(node.getElements().get(1), ctx));
+                return new BigDecimal(ChronoUnit.DAYS.between(date1, date2));
+            }
+            case WeekDiff: {
+                LocalDate date1 = toLocalDate(evaluate(node.getElements().get(0), ctx));
+                LocalDate date2 = toLocalDate(evaluate(node.getElements().get(1), ctx));
+                return new BigDecimal(ChronoUnit.WEEKS.between(date1, date2));
+            }
+            case MonthDiff: {
+                LocalDate date1 = toLocalDate(evaluate(node.getElements().get(0), ctx));
+                LocalDate date2 = toLocalDate(evaluate(node.getElements().get(1), ctx));
+                return new BigDecimal(ChronoUnit.MONTHS.between(date1, date2));
+            }
+            case YearDiff: {
+                LocalDate date1 = toLocalDate(evaluate(node.getElements().get(0), ctx));
+                LocalDate date2 = toLocalDate(evaluate(node.getElements().get(1), ctx));
+                return new BigDecimal(ChronoUnit.YEARS.between(date1, date2));
+            }
+            case Year:
+                return new BigDecimal(toLocalDate(evaluate(node.getExpression(), ctx)).getYear());
+            case MonthOfYear:
+                return new BigDecimal(toLocalDate(evaluate(node.getExpression(), ctx)).getMonthValue());
+            case DayOfMonth:
+                return new BigDecimal(toLocalDate(evaluate(node.getExpression(), ctx)).getDayOfMonth());
+            case DayOfYear:
+                return new BigDecimal(toLocalDate(evaluate(node.getExpression(), ctx)).getDayOfYear());
+            case DayOfWeek:
+                return new BigDecimal(toLocalDate(evaluate(node.getExpression(), ctx)).getDayOfWeek().getValue());
+            case WeekOfYear: {
+                LocalDate date = toLocalDate(evaluate(node.getExpression(), ctx));
+                return new BigDecimal(date.get(WeekFields.ISO.weekOfYear()));
+            }
+            case WeekOfMonth: {
+                LocalDate date = toLocalDate(evaluate(node.getExpression(), ctx));
+                return new BigDecimal(date.get(WeekFields.ISO.weekOfMonth()));
+            }
             case AddDatePart:
+                return handleDatePartArithmetic(node, ctx, 1);
+
             case SubtractDatePart:
-                throw new UnsupportedOperationException(node.getType() + " not implemented in evaluator");
+                return handleDatePartArithmetic(node, ctx, -1);
 
             default:
                 throw new IllegalStateException("Unknown AST node type: " + node.getType());
@@ -231,5 +315,64 @@ public class IdemEvaluator {
         }
         // Fallback to equals for non-comparable types or different types
         return Objects.equals(left, right) ? 0 : -1;
+    }
+
+    private static LocalDate toLocalDate(Object value) {
+        if (value instanceof Date) {
+            return ((Date) value).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        }
+        throw new ClassCastException("Cannot cast " + (value != null ? value.getClass().getName() : "null") + " to Date.");
+    }
+
+    private static Date truncateTime(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        return cal.getTime();
+    }
+
+    private static Object handleDatePartArithmetic(AstNode node, EvalContext ctx, int sign) {
+        Object dateValue = evaluate(node.getLeft(), ctx);
+        if (!(dateValue instanceof Date)) {
+            throw new IllegalArgumentException("Date arithmetic can only be performed on a Date object.");
+        }
+
+        String datePartStr = node.getDatePart();
+        Matcher matcher = DATE_PART_PATTERN.matcher(datePartStr);
+
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("Invalid DatePart format: " + datePartStr);
+        }
+
+        long amount = Long.parseLong(matcher.group(1));
+        String unit = matcher.group(2).toLowerCase();
+
+        // Use the sign to determine addition or subtraction
+        long effectiveAmount = amount * sign;
+
+        ZonedDateTime zdt = ((Date) dateValue).toInstant().atZone(ZoneId.systemDefault());
+
+        switch (unit) {
+            case "d":
+                zdt = zdt.plusDays(effectiveAmount);
+                break;
+            case "w":
+                zdt = zdt.plusWeeks(effectiveAmount);
+                break;
+            case "m":
+                zdt = zdt.plusMonths(effectiveAmount);
+                break;
+            case "y":
+                zdt = zdt.plusYears(effectiveAmount);
+                break;
+            default:
+                // This case should not be reached due to the regex pattern
+                throw new IllegalStateException("Unknown date part unit: " + unit);
+        }
+
+        return Date.from(zdt.toInstant());
     }
 }

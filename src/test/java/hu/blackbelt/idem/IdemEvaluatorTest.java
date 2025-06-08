@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,8 @@ public class IdemEvaluatorTest {
                                 List.of(new BigDecimal("3"), new BigDecimal("4"))
                         ),
                         "str", "hello",
-                        "items", List.of(new BigDecimal("1"), new BigDecimal("2"), new BigDecimal("3"))
+                        "items", List.of(new BigDecimal("1"), new BigDecimal("2"), new BigDecimal("3")),
+                        "startDate", parseLocalDate("2025-06-15")
                 ))
                 .build();
     }
@@ -164,5 +166,93 @@ public class IdemEvaluatorTest {
         // true && true -> true
         // returns self.matrix[0][1] -> 2
         assertEquals(new BigDecimal("2"), evaluate(expr));
+    }
+
+    @Test
+    @DisplayName("handles BoolToInt function")
+    void testBoolToInt() {
+        assertEquals(new BigDecimal("1"), evaluate("boolToInt(true)"));
+        assertEquals(new BigDecimal("0"), evaluate("boolToInt(false)"));
+        assertEquals(new BigDecimal("0"), evaluate("boolToInt(self.flag)"));
+    }
+
+    @Test
+    @DisplayName("handles Size function")
+    void testSize() {
+        assertEquals(new BigDecimal("5"), evaluate("size(\"hello\")"));
+        assertEquals(new BigDecimal("3"), evaluate("size([1,2,3])"));
+        assertEquals(new BigDecimal("3"), evaluate("size(self.items)"));
+        assertEquals(new BigDecimal("1"), evaluate("size(self.nested)"));
+    }
+
+    @Test
+    @DisplayName("handles numeric functions Round, Floor, Ceil")
+    void testNumericFunctions() {
+        assertEquals(new BigDecimal("1.23"), evaluate("round(1.2345, 2)"));
+        assertEquals(new BigDecimal("1.24"), evaluate("round(1.2355, 2)"));
+        assertEquals(new BigDecimal("1.23"), evaluate("floor(1.239, 2)"));
+        assertEquals(new BigDecimal("1.24"), evaluate("ceil(1.231, 2)"));
+    }
+
+    @Test
+    @DisplayName("handles no-arg date functions Today, Yesterday, Tomorrow")
+    void testNoArgDateFunctions() {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        Date today = cal.getTime();
+
+        assertEquals(today, evaluate("today()"));
+
+        cal.add(Calendar.DATE, -1);
+        Date yesterday = cal.getTime();
+        assertEquals(yesterday, evaluate("yesterday()"));
+
+        cal.add(Calendar.DATE, 2);
+        Date tomorrow = cal.getTime();
+        assertEquals(tomorrow, evaluate("tomorrow()"));
+    }
+
+    @Test
+    @DisplayName("handles date part extraction functions")
+    void testDatePartFunctions() {
+        assertEquals(new BigDecimal("2023"), evaluate("year(2023-10-31)"));
+        assertEquals(new BigDecimal("10"), evaluate("monthOfYear(2023-10-31)"));
+        assertEquals(new BigDecimal("31"), evaluate("dayOfMonth(2023-10-31)"));
+        assertEquals(new BigDecimal("304"), evaluate("dayOfYear(2023-10-31)"));
+        assertEquals(new BigDecimal("2"), evaluate("dayOfWeek(2023-10-31)"));
+        assertEquals(new BigDecimal("44"), evaluate("weekOfYear(2023-10-31)"));
+        assertEquals(new BigDecimal("5"), evaluate("weekOfMonth(2023-10-31)"));
+    }
+
+    @Test
+    @DisplayName("handles date diff functions")
+    void testDateDiffFunctions() {
+        assertEquals(new BigDecimal("10"), evaluate("dayDiff(2024-03-05, 2024-03-15)"));
+        assertEquals(new BigDecimal("-1"), evaluate("weekDiff(2024-03-15, 2024-03-08)"));
+        assertEquals(new BigDecimal("2"), evaluate("monthDiff(2024-03-15, 2024-05-15)"));
+        assertEquals(new BigDecimal("-3"), evaluate("yearDiff(2027-01-01, 2024-01-01)"));
+    }
+
+    @Test
+    @DisplayName("handles date part arithmetic")
+    void testDatePartArithmetic() {
+        // Test addition with different units (d, W, m, Y)
+        assertEquals(parseLocalDate("2025-06-18"), evaluate("2025-06-08 + 10d"));
+        assertEquals(parseLocalDate("2025-06-29"), evaluate("2025-06-08 + 3W"));
+        assertEquals(parseLocalDate("2025-08-08"), evaluate("2025-06-08 + 2m"));
+        assertEquals(parseLocalDate("2027-06-08"), evaluate("2025-06-08 + 2Y"));
+
+        // Test subtraction with different units (D, w, M, y)
+        assertEquals(parseLocalDate("2025-05-29"), evaluate("2025-06-08 - 10D"));
+        assertEquals(parseLocalDate("2025-05-25"), evaluate("2025-06-08 - 2w"));
+        assertEquals(parseLocalDate("2025-03-08"), evaluate("2025-06-08 - 3M"));
+        assertEquals(parseLocalDate("2024-06-08"), evaluate("2025-06-08 - 1y"));
+
+        // Test with a variable from the self context
+        assertEquals(parseLocalDate("2025-06-20"), evaluate("self.startDate + 5d"));
+        assertEquals(parseLocalDate("2025-05-15"), evaluate("self.startDate - 1M"));
     }
 }

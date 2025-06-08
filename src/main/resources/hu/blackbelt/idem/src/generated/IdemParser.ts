@@ -79,10 +79,10 @@ export class IdemParser extends antlr.Parser {
     public static readonly RULE_exprList = 10;
 
     public static readonly literalNames = [
-        null, "'.'", "'self'", "'size'", "'in'", "'null'", "'day_diff'", 
-        "'week_diff'", "'month_diff'", "'year_diff'", "'year'", "'day_of_year'", 
-        "'week_of_year'", "'month_of_year'", "'day_of_month'", "'week_of_month'", 
-        "'day_of_week'", "'today'", "'yesterday'", "'tomorrow'", "'choice'", 
+        null, "'.'", "'self'", "'size'", "'in'", "'null'", "'dayDiff'", 
+        "'weekDiff'", "'monthDiff'", "'yearDiff'", "'year'", "'dayOfYear'", 
+        "'weekOfYear'", "'monthOfYear'", "'dayOfMonth'", "'weekOfMonth'", 
+        "'dayOfWeek'", "'today'", "'yesterday'", "'tomorrow'", "'choice'", 
         "'floor'", "'ceil'", "'round'", "'boolToInt'", "'||'", "'&&'", "'=='", 
         "'!='", "'>='", "'<='", "'^'", "'!'", "'>'", "'<'", "'+'", "'-'", 
         "'*'", "'/'", "'%'", "'['", "']'", "'('", "')'", "';'", "'='", "','", 

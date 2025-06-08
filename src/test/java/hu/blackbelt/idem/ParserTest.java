@@ -1,6 +1,5 @@
 package hu.blackbelt.idem;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -395,4 +394,58 @@ class ParserTest {
 
         assertEquals(expected, actual);
     }
+
+    //
+    // NEW FUNCTION CALL TESTS
+    //
+    @Test
+    @DisplayName("function call with two arguments")
+    void functionCallTwoArgs() {
+        AstNode ast = parse("round(1.234, 2)");
+        assertEquals(AstNodeType.Round, ast.getType());
+        assertEquals(2, ast.getElements().size());
+        assertEquals(AstNodeType.Number, ast.getElements().get(0).getType());
+        assertEquals(new BigDecimal("1.234"), ast.getElements().get(0).getValue());
+        assertEquals(AstNodeType.Number, ast.getElements().get(1).getType());
+        assertEquals(new BigDecimal("2"), ast.getElements().get(1).getValue());
+    }
+
+    @Test
+    @DisplayName("function call with one argument")
+    void functionCallOneArg() {
+        AstNode ast = parse("size(\"hello\")");
+        assertEquals(AstNodeType.Size, ast.getType());
+        assertNotNull(ast.getExpression());
+        assertEquals(AstNodeType.String, ast.getExpression().getType());
+        assertEquals("hello", ast.getExpression().getValue());
+    }
+
+    @Test
+    @DisplayName("function call with date argument")
+    void functionCallDateArg() {
+        AstNode ast = parse("year(2024-01-01)");
+        assertEquals(AstNodeType.Year, ast.getType());
+        assertNotNull(ast.getExpression());
+        assertEquals(AstNodeType.LocalDate, ast.getExpression().getType());
+    }
+
+    @Test
+    @DisplayName("function call with no arguments")
+    void functionCallNoArgs() {
+        AstNode ast = parse("today()");
+        assertEquals(AstNodeType.Today, ast.getType());
+        assertNull(ast.getElements());
+        assertNull(ast.getExpression());
+    }
+
+    @Test
+    @DisplayName("function call with self expression argument")
+    void functionCallSelfArg() {
+        AstNode ast = parse("size(self.a)");
+        assertEquals(AstNodeType.Size, ast.getType());
+        assertNotNull(ast.getExpression());
+        assertEquals(AstNodeType.Self, ast.getExpression().getType());
+        assertEquals(List.of("a"), ast.getExpression().getTags().getFeatures());
+    }
+
 }
