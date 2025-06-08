@@ -5,31 +5,30 @@ parse
  ;
 
 block
- : (expression)?
+ : (functionCall  | expression)
  ;
 
-
-//functionCall
-// : Floor '(' expression  ',' expression ')'        #floorFunctionCall
-// | Ceil '(' expression  ',' expression ')'         #ceilFunctionCall
-// | Round '(' expression ',' expression ')'         #roundFunctionCall/
-// | Size '(' expression ')'                         #sizeFunctionCall
-// | DayDiff '(' expression ',' expression ')'       #dayDiffFunctionCall
-// | WeekDiff '(' expression ',' expression ')'      #weekDiffFunctionCall
-// | MonthDiff '(' expression ',' expression ')'     #monthDiffFunctionCall
-// | YearDiff '(' expression ',' expression ')'      #yearDiffFunctionCall
-// | Year        '(' expression ')'                  #yearFunctionCall
-// | DayOfYear   '(' expression ')'                  #dayOfYearFunctionCall
-// | WeekOfYear  '(' expression ')'                  #weekOfYearFunctionCall
-// | MonthOfYear '(' expression ')'                  #monthOfYearFunctionCall
-// | DayOfMonth  '(' expression ')'                  #dayOfMonthFunctionCall
-// | WeekOfMonth '(' expression ')'                  #weekOfMonthFunctionCall
-// | DayOfWeek   '(' expression ')'                  #dayOfWeekFunctionCall
-// | Today '(' ')'                                   #todayFunctionCall
-// | Yesterday '(' ')'                               #yesterdayFunctionCall
-// | Tomorrow '(' ')'                                #tomorrowFunctionCall
-// | BoolToInt '(' expression ')'                    #boolToIntFunctionCall
-// ;
+functionCall
+ : Floor '(' expression  ',' expression ')'        #floorFunctionCall
+ | Ceil '(' expression  ',' expression ')'         #ceilFunctionCall
+ | Round '(' expression ',' expression ')'         #roundFunctionCall
+ | Size '(' expression ')'                         #sizeFunctionCall
+ | DayDiff '(' expression ',' expression ')'       #dayDiffFunctionCall
+ | WeekDiff '(' expression ',' expression ')'      #weekDiffFunctionCall
+ | MonthDiff '(' expression ',' expression ')'     #monthDiffFunctionCall
+ | YearDiff '(' expression ',' expression ')'      #yearDiffFunctionCall
+ | Year        '(' expression ')'                  #yearFunctionCall
+ | DayOfYear   '(' expression ')'                  #dayOfYearFunctionCall
+ | WeekOfYear  '(' expression ')'                  #weekOfYearFunctionCall
+ | MonthOfYear '(' expression ')'                  #monthOfYearFunctionCall
+ | DayOfMonth  '(' expression ')'                  #dayOfMonthFunctionCall
+ | WeekOfMonth '(' expression ')'                  #weekOfMonthFunctionCall
+ | DayOfWeek   '(' expression ')'                  #dayOfWeekFunctionCall
+ | Today '(' ')'                                   #todayFunctionCall
+ | Yesterday '(' ')'                               #yesterdayFunctionCall
+ | Tomorrow '(' ')'                                #tomorrowFunctionCall
+ | BoolToInt '(' expression ')'                    #boolToIntFunctionCall
+ ;
 
 expression
  : 'self' tags                              #selfExpression
@@ -96,34 +95,30 @@ exprList
  : expression (',' expression)*
  ;
 
-Identifier
- : (Char | Unicode | Underscore) (Char | Digit | Unicode | Underscore)*
- ;
+Size     : 'size';
+In       : 'in';
+Null     : 'null';
 
-//Size     : 'size';
-//In       : 'in';
-//Null     : 'null';
+DayDiff    : 'day_diff';
+WeekDiff   : 'week_diff';
+MonthDiff  : 'month_diff';
+YearDiff   : 'year_diff';
 
-//DayDiff    : 'day_diff';
-//WeekDiff   : 'week_diff';
-//MonthDiff  : 'month_diff';
-//YearDiff   : 'year_diff';
-
-//Year        : 'year';
-//DayOfYear   : 'day_of_year';
-//WeekOfYear  : 'week_of_year';
-//MonthOfYear : 'month_of_year';
-//DayOfMonth  : 'day_of_month';
-//WeekOfMonth : 'week_of_month';
-//DayOfWeek   : 'day_of_week';
-//Today       : 'today';
-//Yesterday   : 'yesterday';
-//Tomorrow    : 'tomorrow';
-//Choice      : 'choice';
-//Floor       : 'floor';
-//Ceil        : 'ceil';
-//Round       : 'round';
-//BoolToInt   : 'boolToInt';
+Year        : 'year';
+DayOfYear   : 'day_of_year';
+WeekOfYear  : 'week_of_year';
+MonthOfYear : 'month_of_year';
+DayOfMonth  : 'day_of_month';
+WeekOfMonth : 'week_of_month';
+DayOfWeek   : 'day_of_week';
+Today       : 'today';
+Yesterday   : 'yesterday';
+Tomorrow    : 'tomorrow';
+Choice      : 'choice';
+Floor       : 'floor';
+Ceil        : 'ceil';
+Round       : 'round';
+BoolToInt   : 'boolToInt';
 
 Or       : '||';
 And      : '&&';
@@ -153,6 +148,10 @@ Colon    : ':';
 Bool
  : 'true' 
  | 'false'
+ ;
+
+Identifier
+ : (Char | Unicode | Underscore) (Char | Digit | Unicode | Underscore)*
  ;
 
 Number

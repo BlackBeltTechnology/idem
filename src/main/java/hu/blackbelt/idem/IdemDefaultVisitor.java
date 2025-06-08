@@ -2,6 +2,7 @@ package hu.blackbelt.idem;
 
 
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigDecimal;
 import java.text.ParseException;
@@ -32,7 +33,17 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
 
     @Override
     public AstNode visitParse(IdemParser.ParseContext ctx) {
-        return this.visitNode(ctx.block());
+        if (ctx.block() != null) {
+            return visitBlock(ctx.block());
+        } else {
+            throw new IllegalArgumentException("Parser root have to be block");
+        }
+    }
+
+    @Override
+    public Object visitTerminal(TerminalNode node) {
+        System.out.println(node.getSymbol() + " " + node.getText());
+        return super.visitTerminal(node);
     }
 
     public AstNode visitBlock(IdemParser.BlockContext ctx) {

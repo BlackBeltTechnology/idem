@@ -20,6 +20,29 @@ class ParserTest {
     }
 
     @Test
+    @DisplayName("true")
+    void logicalTrue() {
+        AstNode ast = parse("true");
+        assertEquals(AstNodeType.Boolean, ast.getType());
+        assertTrue((Boolean) ((Optional) ast.getValue()).get());
+    }
+
+    @Test
+    @DisplayName("false")
+    void logicalFalse() {
+        AstNode ast = parse("false");
+        assertEquals(AstNodeType.Boolean, ast.getType());
+        assertFalse((Boolean) ((Optional) ast.getValue()).get());
+    }
+
+    @Test
+    @DisplayName("null")
+    void logicalNull() {
+        AstNode ast = parse("null");
+        assertEquals(AstNodeType.Null, ast.getType());
+    }
+
+    @Test
     @DisplayName("self-expression with tags")
     void selfExpressionWithTags() {
         AstNode ast = parse("self.foo.bar");
@@ -50,7 +73,7 @@ class ParserTest {
         AstNode expr = ast.getExpression();
         assertNotNull(expr);
         assertEquals(AstNodeType.Boolean, expr.getType());
-        assertTrue((Boolean) expr.getValue());
+        assertTrue((Boolean) ((Optional) expr.getValue()).get());
     }
 
     @Test
