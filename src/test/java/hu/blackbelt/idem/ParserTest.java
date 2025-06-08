@@ -69,7 +69,7 @@ class ParserTest {
     @Test
     @DisplayName("logical not")
     void logicalNot() {
-        AstNode ast = parse("!true");
+        AstNode ast = parse("not true");
         assertEquals(AstNodeType.Not, ast.getType());
         AstNode expr = ast.getExpression();
         assertNotNull(expr);
@@ -132,10 +132,11 @@ class ParserTest {
     }
 
     @Test
-    @DisplayName("logical and / or")
+    @DisplayName("logical and / or / implies")
     void logicalAndOr() {
-        assertEquals(AstNodeType.And, parse("true && false").getType());
-        assertEquals(AstNodeType.Or, parse("true || false").getType());
+        assertEquals(AstNodeType.And, parse("true and false").getType());
+        assertEquals(AstNodeType.Or, parse("true or false").getType());
+        assertEquals(AstNodeType.Implies, parse("true implies false").getType());
     }
 
     @Test
@@ -252,7 +253,7 @@ class ParserTest {
     @Test
     @DisplayName("mixes arithmetic and logical in one expression")
     void mixesArithmeticAndLogical() {
-        AstNode actual = parse("!(1 + 2 * 3 <= 7) && (4 % 2 == 0)");
+        AstNode actual = parse("not (1 + 2 * 3 <= 7) and (4 % 2 == 0)");
 
         AstNode expected = AstNode.builder()
                 .type(AstNodeType.And)
@@ -347,7 +348,7 @@ class ParserTest {
     @Test
     @DisplayName("combines logical and unary with self chains")
     void combinesLogicalAndUnaryWithSelfChains() {
-        AstNode actual = parse("!self.isValid && self.items.length > 0");
+        AstNode actual = parse("not self.isValid and self.items.length > 0");
 
         AstNode expected = AstNode.builder()
                 .type(AstNodeType.And)

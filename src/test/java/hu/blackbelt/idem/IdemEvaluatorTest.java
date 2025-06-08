@@ -60,7 +60,7 @@ public class IdemEvaluatorTest {
     void testBooleans() {
         assertEquals(true, evaluate("true"));
         assertEquals(false, evaluate("false"));
-        assertEquals(true, evaluate("!false"));
+        assertEquals(true, evaluate("not false"));
     }
 
     @Test
@@ -109,10 +109,19 @@ public class IdemEvaluatorTest {
     @Test
     @DisplayName("handles && and ||")
     void testLogical() {
-        assertEquals(false, evaluate("true&&false"));
-        assertEquals(true, evaluate("true||false"));
+        assertEquals(false, evaluate("true and false"));
+        assertEquals(true, evaluate("true or false"));
     }
 
+    @Test
+    @DisplayName("handles implies operator")
+    void testImplies() {
+        assertEquals(true, evaluate("true implies true"));
+        assertEquals(false, evaluate("true implies false"));
+        assertEquals(true, evaluate("false implies true"));
+        assertEquals(true, evaluate("false implies false"));
+    }
+    
     @Test
     @DisplayName("handles ternary operator")
     void testTernary() {
@@ -155,10 +164,10 @@ public class IdemEvaluatorTest {
     @Test
     @DisplayName("evaluates a complex combined expression")
     void testComplexExpression() {
-        String expr = "!(self.a + self.b > 4) && (2 in self.items) ? self.matrix[0][1] : self.nested.x";
-        // !(1 + 2 > 3) -> !(false) -> true
+        String expr = "not (self.a + self.b > 4) and (2 in self.items) ? self.matrix[0][1] : self.nested.x";
+        // not (1 + 2 > 3) -> not (false) -> true
         // (2 in [1,2,3]) -> true
-        // true && true -> true
+        // true and true -> true
         // returns self.matrix[0][1] -> 2
         assertEquals(new BigDecimal("2"), evaluate(expr));
     }

@@ -34,6 +34,7 @@ export type AstNodeType =
   | 'Lte'
   | 'Ternary'
   | 'In'
+  | 'Implies'
   | 'AddDatePart'
   | 'SubtractDatePart'
   | 'IndexAccess'

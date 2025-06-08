@@ -8,7 +8,7 @@ expression
   : expression '!' Identifier '(' exprList? ')' #postfixFunctionCallExpression
   | Self tags                                 #selfExpression
   | Subtract expression                       #unaryMinusExpression
-  | Excl expression                           #notExpression
+  | Not expression                            #notExpression
   | expression Pow expression                 #powerExpression
   | expression indexes                        #indexedAccessExpression
   | expression Multiply expression            #multiplyExpression
@@ -26,6 +26,7 @@ expression
   | expression NEquals expression             #notEqExpression
   | expression And expression                 #andExpression
   | expression Or expression                  #orExpression
+  | expression Implies expression             #impliesExpression
   | expression '?' expression ':' expression  #ternaryExpression
   | expression In expression                  #inExpression
   | Number                                    #numberExpression
@@ -78,14 +79,15 @@ Today     : 'today';
 Yesterday : 'yesterday';
 Tomorrow  : 'tomorrow';
 
-Or        : '||';
-And       : '&&';
+Or        : 'or';
+And       : 'and';
 Equals    : '==';
 NEquals   : '!=';
 GTEquals  : '>=';
 LTEquals  : '<=';
 Pow       : '^';
-Excl      : '!';
+Not       : 'not';
+Implies   : 'implies';
 GT        : '>';
 LT        : '<';
 Add       : '+';

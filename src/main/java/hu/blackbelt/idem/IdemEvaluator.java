@@ -120,6 +120,8 @@ public class IdemEvaluator {
                 }
                 return false;
             }
+            case Implies:
+                return !(Boolean) evaluate(node.getLeft(), ctx) || (Boolean) evaluate(node.getRight(), ctx);
             case List:
                 return node.getElements().stream()
                         .map(el -> evaluate(el, ctx))

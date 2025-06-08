@@ -31,7 +31,7 @@ describe('evaluate', () => {
   it('parses booleans and not', () => {
     expect(evaluate(expressionToAst('true'), ctx)).toBe(true);
     expect(evaluate(expressionToAst('false'), ctx)).toBe(false);
-    expect(evaluate(expressionToAst('!false'), ctx)).toBe(true);
+    expect(evaluate(expressionToAst('not false'), ctx)).toBe(true);
   });
 
   it('parses null', () => {
@@ -67,8 +67,15 @@ describe('evaluate', () => {
   });
 
   it('handles && and ||', () => {
-    expect(evaluate(expressionToAst('true&&false'), ctx)).toBe(false);
-    expect(evaluate(expressionToAst('true||false'), ctx)).toBe(true);
+    expect(evaluate(expressionToAst('true and false'), ctx)).toBe(false);
+    expect(evaluate(expressionToAst('true or false'), ctx)).toBe(true);
+  });
+
+  it('handles implies operator', () => {
+    expect(evalExpr('true implies true')).toBe(true);
+    expect(evalExpr('true implies false')).toBe(false);
+    expect(evalExpr('false implies true')).toBe(true);
+    expect(evalExpr('false implies false')).toBe(true);
   });
 
   it('handles ternary operator', () => {
@@ -99,7 +106,7 @@ describe('evaluate', () => {
   });
 
   it('evaluates a complex combined expression', () => {
-    const expr = '!(self.a+self.b>4) && (self.items in [1,2,3]) ? self.matrix[0][1] : self.nested.x';
+    const expr = 'not (self.a+self.b>4) and (self.items in [1,2,3]) ? self.matrix[0][1] : self.nested.x';
     expect(evaluate(expressionToAst(expr), ctx)).toBe(42);
   });
 

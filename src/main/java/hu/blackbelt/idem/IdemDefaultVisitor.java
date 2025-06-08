@@ -409,4 +409,13 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
                 .right(this.visitNode(ctx.expression(1)))
                 .build();
     }
+
+    @Override
+    public AstNode visitImpliesExpression(IdemParser.ImpliesExpressionContext ctx) {
+        return AstNode.builder()
+                .type(AstNodeType.Implies)
+                .left(this.visitNode(ctx.expression(0)))
+                .right(this.visitNode(ctx.expression(1)))
+                .build();
+    }
 }

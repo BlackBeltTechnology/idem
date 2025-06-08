@@ -11,6 +11,7 @@ import type {
   GtEqExpressionContext,
   GtExpressionContext,
   InExpressionContext,
+  ImpliesExpressionContext,
   IndexesContext,
   IndexedAccessExpressionContext,
   ListContext,
@@ -200,6 +201,12 @@ export class Visitor extends IdemVisitor<ASTNode> {
 
   visitOrExpression = (ctx: OrExpressionContext): ASTNode => ({
     type: 'Or',
+    left: this.visit(ctx.expression(0) as ExpressionContext),
+    right: this.visit(ctx.expression(1) as ExpressionContext),
+  });
+
+  visitImpliesExpression = (ctx: ImpliesExpressionContext): ASTNode => ({
+    type: 'Implies',
     left: this.visit(ctx.expression(0) as ExpressionContext),
     right: this.visit(ctx.expression(1) as ExpressionContext),
   });

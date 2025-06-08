@@ -21,7 +21,7 @@ describe('Expression → AST', () => {
   });
 
   it('logical not', () => {
-    expect(expressionToAst('!true')).toMatchObject({
+    expect(expressionToAst('not true')).toMatchObject({
       type: 'Not',
       expr: { type: 'Boolean', value: true },
     });
@@ -77,9 +77,10 @@ describe('Expression → AST', () => {
     expect(expressionToAst('1!=2')).toMatchObject({ type: 'NotEq' });
   });
 
-  it('logical and / or', () => {
-    expect(expressionToAst('true && false')).toMatchObject({ type: 'And' });
-    expect(expressionToAst('true || false')).toMatchObject({ type: 'Or' });
+  it('logical and / or / implies', () => {
+    expect(expressionToAst('true and false')).toMatchObject({ type: 'And' });
+    expect(expressionToAst('true or false')).toMatchObject({ type: 'Or' });
+    expect(expressionToAst('false implies true')).toMatchObject({ type: 'Implies' });
   });
 
   it('ternary', () => {
@@ -170,7 +171,7 @@ describe('Expression → AST', () => {
   });
 
   it('mixes arithmetic and logical in one expression', () => {
-    const ast = expressionToAst('!(1 + 2 * 3 <= 7) && (4 % 2 == 0)');
+    const ast = expressionToAst('not (1 + 2 * 3 <= 7) and (4 % 2 == 0)');
     expect(ast).toEqual({
       type: 'And',
       left: {
@@ -226,7 +227,7 @@ describe('Expression → AST', () => {
   });
 
   it('combines logical and unary with self chains', () => {
-    const ast = expressionToAst('!self.isValid && self.items.length > 0');
+    const ast = expressionToAst('not self.isValid and self.items.length > 0');
     expect(ast).toEqual({
       type: 'And',
       left: {

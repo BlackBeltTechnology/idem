@@ -57,15 +57,17 @@ export function evaluate(node: ASTNode, ctx?: EvalContext): any {
     case 'Power':
       return evaluate(node.left, ctx) ** evaluate(node.right, ctx);
     case 'And':
-      return evaluate(node.left, ctx) && evaluate(node.right, ctx);
+      return !!evaluate(node.left, ctx) && evaluate(node.right, ctx);
     case 'Or':
-      return evaluate(node.left, ctx) || evaluate(node.right, ctx);
+      return !!evaluate(node.left, ctx) || evaluate(node.right, ctx);
     case 'Not':
       return !evaluate(node.expr, ctx);
     case 'UnaryMinus':
       return -evaluate(node.expr, ctx);
     case 'Ternary':
       return evaluate(node.cond, ctx) ? evaluate(node.then, ctx) : evaluate(node.else, ctx);
+    case 'Implies':
+      return !evaluate(node.left, ctx) || !!evaluate(node.right, ctx);
     case 'In': {
       const left = evaluate(node.left, ctx);
       const right = evaluate(node.right, ctx);
