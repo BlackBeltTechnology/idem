@@ -81,12 +81,7 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
 
     @Override
     public AstNode visitListExpression(IdemParser.ListExpressionContext ctx) {
-        return ctx.indexes() != null
-                ? AstNode.builder().type(AstNodeType.ListAccess)
-                    .indexes(this.visitNode(ctx.indexes()))
-                    .list(this.visitNode(ctx.list()))
-                    .build()
-                : this.visitNode(ctx.list());
+        return this.visitNode(ctx.list());
     }
 
     @Override
@@ -99,16 +94,42 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
         if (matcher.find()) {
             unquoted = matcher.group(2);
         }
-        return ctx.indexes() != null
-                ? AstNode.builder()
+        return AstNode.builder()
+                .type(AstNodeType.String)
+                .value(unquoted)
+                .build();
+    }
+
+    @Override
+    public AstNode visitIndexedAccessExpression(IdemParser.IndexedAccessExpressionContext ctx) {
+        IdemParser.ExpressionContext baseExprCtx = ctx.expression();
+
+        // If the expression being indexed is a list literal...
+        if (baseExprCtx instanceof IdemParser.ListExpressionContext) {
+            return AstNode.builder()
+                    .type(AstNodeType.ListAccess)
+                    .list(this.visitNode(baseExprCtx))
+                    .indexes(this.visitNode(ctx.indexes()))
+                    .build();
+        }
+        // If the expression being indexed is a string literal...
+        else if (baseExprCtx instanceof IdemParser.StringExpressionContext) {
+            String unquoted = baseExprCtx.getText();
+            unquoted = unquoted.substring(1, unquoted.length() - 1);
+            return AstNode.builder()
                     .type(AstNodeType.StringAccess)
                     .value(unquoted)
                     .indexes(this.visitNode(ctx.indexes()))
-                    .build()
-                : AstNode.builder()
-                    .type(AstNodeType.String)
-                    .value(unquoted)
                     .build();
+        }
+        // For all other expressions (variables, function calls, etc.)...
+        else {
+            return AstNode.builder()
+                    .type(AstNodeType.IndexAccess)
+                    .expression(this.visitNode(baseExprCtx))
+                    .indexes(this.visitNode(ctx.indexes()))
+                    .build();
+        }
     }
 
     @Override

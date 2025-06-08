@@ -30,6 +30,7 @@ public enum AstNodeType {
     ExprList,
     Indexes,
     Index,
+    IndexAccess,
     Pointers,
     Tags,
     String,

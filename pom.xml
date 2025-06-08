@@ -95,7 +95,17 @@
                         <arguments>install --frozen-lockfile</arguments>
                     </configuration>
                 </execution>
-  
+
+                <execution>
+                    <id>pnpm-generate-ast</id>
+                    <goals>
+                        <goal>pnpm</goal>
+                    </goals>
+                    <configuration>
+                        <arguments>run generate:antlr</arguments>
+                    </configuration>
+                </execution>
+
                 <execution>
                     <id>pnpm-test</id>
                     <goals>

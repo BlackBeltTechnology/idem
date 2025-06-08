@@ -49,6 +49,7 @@ import { AndExpressionContext } from "./IdemParser.js";
 import { OrExpressionContext } from "./IdemParser.js";
 import { TernaryExpressionContext } from "./IdemParser.js";
 import { InExpressionContext } from "./IdemParser.js";
+import { IndexedAccessExpressionContext } from "./IdemParser.js";
 import { AddDatePartExpressionContext } from "./IdemParser.js";
 import { SubtractDatePartExpressionContext } from "./IdemParser.js";
 import { ListContext } from "./IdemParser.js";
@@ -395,6 +396,13 @@ export class IdemVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      * @return the visitor result
      */
     visitInExpression?: (ctx: InExpressionContext) => Result;
+    /**
+     * Visit a parse tree produced by the `indexedAccessExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitIndexedAccessExpression?: (ctx: IndexedAccessExpressionContext) => Result;
     /**
      * Visit a parse tree produced by the `addDatePartExpression`
      * labeled alternative in `IdemParser.expression`.

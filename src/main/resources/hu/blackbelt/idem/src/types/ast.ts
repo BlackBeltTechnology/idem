@@ -30,6 +30,7 @@ export type AstNodeType =
   | 'Index'
   | 'Pointers'
   | 'Tags'
+  | 'IndexAccess'
   | 'String'
   | 'StringAccess'
   | 'PointerAccess'

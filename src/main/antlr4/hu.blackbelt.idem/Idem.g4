@@ -35,6 +35,7 @@ expression
  | Subtract expression                      #unaryMinusExpression
  | Excl expression                          #notExpression
  | expression Pow expression                #powerExpression
+ | expression indexes                       #indexedAccessExpression
  | expression Multiply expression           #multiplyExpression
  | expression Divide expression             #divideExpression
  | expression Modulus expression            #modulusExpression
@@ -56,15 +57,10 @@ expression
  | LocalDate                                #localDateExpression
  | Bool                                     #boolExpression
  | Null                                     #nullExpression
- | list indexes?                            #listExpression
- | String indexes?                          #stringExpression
+ | list                                     #listExpression
+ | String                                   #stringExpression
  | OParen expression CParen pointers?       #expressionExpression
  ;
-
-
-//selfToken
-// : 'self' ('.' Identifier )+
-// ;
 
 list
  : '[' exprList? ']'
@@ -177,10 +173,6 @@ DatePart
 Space
  : [ \t\r\n\u000C] -> skip
  ;
-
-//fragment SelfFrag
-// : 'self'
-// ;
 
 fragment Int
  : [1-9] Digit*

@@ -90,6 +90,18 @@ export function evaluate(node: ASTNode, ctx?: EvalContext): any {
     case 'List':
       return node.elements.map((el: ASTNode) => evaluate(el, ctx));
 
+    case 'IndexAccess': {
+      let current = evaluate(node.expr, ctx);
+      const idxs = node.indexes.elements.map((ix: ASTNode) => evaluate(ix, ctx));
+
+      for (const i of idxs) {
+        if (current === null || current === undefined) return undefined;
+        // In JS, bracket notation works for both arrays and strings
+        current = current[i];
+      }
+      return current;
+    }
+
     case 'ListAccess': {
       const arr = evaluate(node.list, ctx);
       const idxs = node.indexes.elements.map((ix: ASTNode) => evaluate(ix, ctx));

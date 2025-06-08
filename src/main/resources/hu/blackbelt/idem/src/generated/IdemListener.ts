@@ -49,6 +49,7 @@ import { AndExpressionContext } from "./IdemParser.js";
 import { OrExpressionContext } from "./IdemParser.js";
 import { TernaryExpressionContext } from "./IdemParser.js";
 import { InExpressionContext } from "./IdemParser.js";
+import { IndexedAccessExpressionContext } from "./IdemParser.js";
 import { AddDatePartExpressionContext } from "./IdemParser.js";
 import { SubtractDatePartExpressionContext } from "./IdemParser.js";
 import { ListContext } from "./IdemParser.js";
@@ -625,6 +626,18 @@ export class IdemListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitInExpression?: (ctx: InExpressionContext) => void;
+    /**
+     * Enter a parse tree produced by the `indexedAccessExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     */
+    enterIndexedAccessExpression?: (ctx: IndexedAccessExpressionContext) => void;
+    /**
+     * Exit a parse tree produced by the `indexedAccessExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     */
+    exitIndexedAccessExpression?: (ctx: IndexedAccessExpressionContext) => void;
     /**
      * Enter a parse tree produced by the `addDatePartExpression`
      * labeled alternative in `IdemParser.expression`.

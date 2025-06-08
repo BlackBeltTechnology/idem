@@ -13,6 +13,7 @@ import type {
   GtExpressionContext,
   InExpressionContext,
   IndexesContext,
+  IndexedAccessExpressionContext,
   ListContext,
   ListExpressionContext,
   LocalDateExpressionContext,
@@ -210,19 +211,46 @@ export class Visitor extends IdemVisitor<ASTNode> {
     value: null,
   });
 
-  visitListExpression = (ctx: ListExpressionContext): ASTNode =>
-    ctx.indexes()
-      ? { type: 'ListAccess', list: this.visit(ctx.list()), indexes: this.visit(ctx.indexes() as IndexesContext) }
-      : (this.visit(ctx.list()) as ASTNode);
+  visitListExpression = (ctx: ListExpressionContext): ASTNode => {
+    return this.visit(ctx.list()) as ASTNode;
+  };
 
   visitStringExpression = (ctx: StringExpressionContext): ASTNode => {
     const raw = ctx.getText();
     const regex = /(['"])(.*?)\1/;
     const match = raw.match(regex);
     const unquoted = match?.[2];
-    return ctx.indexes()
-      ? { type: 'StringAccess', value: unquoted, indexes: this.visit(ctx.indexes() as IndexesContext) }
-      : { type: 'String', value: unquoted };
+    return { type: 'String', value: unquoted };
+  };
+
+  visitIndexedAccessExpression = (ctx: IndexedAccessExpressionContext): ASTNode => {
+    const baseExprCtx = ctx.expression();
+
+    if (baseExprCtx.constructor.name === 'ListExpressionContext') {
+      return {
+        type: 'ListAccess',
+        list: this.visit(baseExprCtx),
+        indexes: this.visit(ctx.indexes()),
+      };
+    }
+
+    if (baseExprCtx.constructor.name === 'StringExpressionContext') {
+      const raw = baseExprCtx.getText();
+      const regex = /(['"])(.*?)\1/;
+      const match = raw.match(regex);
+      const unquoted = match?.[2];
+      return {
+        type: 'StringAccess',
+        value: unquoted,
+        indexes: this.visit(ctx.indexes()),
+      };
+    }
+
+    return {
+      type: 'IndexAccess',
+      expr: this.visit(baseExprCtx),
+      indexes: this.visit(ctx.indexes()),
+    };
   };
 
   visitExpressionExpression = (ctx: ExpressionExpressionContext): ASTNode => {

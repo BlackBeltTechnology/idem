@@ -42,6 +42,12 @@ public class IdemEvaluator {
             case String:
                 return node.getValue();
 
+            case StringAccess: {
+                String str = (String) node.getValue();
+                int index = toBigDecimal(evaluate(node.getIndexes().getElements().get(0), ctx)).intValue();
+                return String.valueOf(str.charAt(index));
+            }
+
             case Self:
                 return getFeatureValue(ctx.getSelf(), node.getTags().getFeatures());
 
@@ -152,11 +158,22 @@ public class IdemEvaluator {
                 return current;
             }
 
+            case IndexAccess: {
+                Object base = evaluate(node.getExpression(), ctx);
+                Object current = base;
+                List<AstNode> indexNodes = node.getIndexes().getElements();
 
-            case StringAccess: {
-                String str = (String) node.getValue();
-                int index = toBigDecimal(evaluate(node.getIndexes().getElements().get(0), ctx)).intValue();
-                return String.valueOf(str.charAt(index));
+                for (AstNode indexNode : indexNodes) {
+                    int idx = toBigDecimal(evaluate(indexNode, ctx)).intValue();
+                    if (current instanceof List) {
+                        current = ((List<?>) current).get(idx);
+                    } else if (current instanceof String) {
+                        current = String.valueOf(((String) current).charAt(idx));
+                    } else {
+                        throw new IllegalStateException("Type " + (current != null ? current.getClass().getName() : "null") + " is not indexable.");
+                    }
+                }
+                return current;
             }
 
             case PointerAccess: {
