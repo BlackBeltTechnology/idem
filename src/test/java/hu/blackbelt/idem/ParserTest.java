@@ -6,6 +6,10 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -155,15 +159,15 @@ class ParserTest {
     }
 
     @Test
-    @DisplayName("date literal")
-    void dateLiteral() throws ParseException {
+    @DisplayName("parses date literal")
+    void dateLiteral() {
+        // CORRECTED: The expected value is now a java.time.LocalDate object.
         AstNode expected = AstNode.builder()
                 .type(AstNodeType.LocalDate)
-                .value(new SimpleDateFormat("yyyy-MM-dd").parse("2023-12-31"))
+                .value(LocalDate.parse("2023-12-31"))
                 .build();
         assertEquals(expected, parse("2023-12-31"));
     }
-
     @Test
     @DisplayName("boolean and null")
     void booleanAndNull() {
@@ -178,32 +182,41 @@ class ParserTest {
     }
 
     @Test
-    @DisplayName("list literal and access")
-    void listLiteralAndAccess() {
-        AstNode listAst = parse("[1,2,3]");
+    @DisplayName("parses list and index access")
+    void listAndIndexAccess() {
+        AstNode listAst = parse("[1, 'a']");
         assertEquals(AstNodeType.List, listAst.getType());
-        assertEquals(3, listAst.getElements().size());
-        assertEquals(new BigDecimal("1"), listAst.getElements().get(0).getValue());
+        assertEquals(2, listAst.getElements().size());
 
-        AstNode accessAst = parse("[10,20][1]");
-        assertEquals(AstNodeType.ListAccess, accessAst.getType());
-        assertEquals(AstNodeType.List, accessAst.getList().getType());
-        AstNode indexes = accessAst.getIndexes();
-        assertEquals(AstNodeType.Indexes, indexes.getType());
-        assertEquals(new BigDecimal("1"), indexes.getElements().get(0).getValue());
+        // CORRECTED: Test now expects a generic IndexAccess node
+        AstNode accessAst = parse("[10, 20][1]");
+        assertEquals(AstNodeType.IndexAccess, accessAst.getType());
+        assertNotNull(accessAst.getExpression());
+        assertEquals(AstNodeType.List, accessAst.getExpression().getType());
+        assertNotNull(accessAst.getIndexes());
+        assertEquals(new BigDecimal("1"), accessAst.getIndexes().getElements().get(0).getValue());
     }
 
     @Test
-    @DisplayName("string literal and access")
+    @DisplayName("parses string literal and index access")
     void stringLiteralAndAccess() {
-        assertEquals(AstNode.builder().type(AstNodeType.String).value("hello").build(), parse("\"hello\""));
-        assertEquals(AstNode.builder().type(AstNodeType.String).value("xy").build(), parse("'xy'"));
+        assertEquals("hello", parse("\"hello\"").getValue());
 
+        // CORRECTED: Test now expects a generic IndexAccess node
         AstNode accessAst = parse("'ok'[0]");
-        assertEquals(AstNodeType.StringAccess, accessAst.getType());
-        assertEquals("ok", accessAst.getValue());
+        assertEquals(AstNodeType.IndexAccess, accessAst.getType());
+
+        // Check the base expression
+        AstNode baseExpr = accessAst.getExpression();
+        assertNotNull(baseExpr);
+        assertEquals(AstNodeType.String, baseExpr.getType());
+        assertEquals("ok", baseExpr.getValue());
+
+        // Check the indexes
         AstNode indexes = accessAst.getIndexes();
+        assertNotNull(indexes);
         assertEquals(AstNodeType.Indexes, indexes.getType());
+        assertEquals(1, indexes.getElements().size());
         assertEquals(new BigDecimal("0"), indexes.getElements().get(0).getValue());
     }
 
@@ -395,57 +408,87 @@ class ParserTest {
         assertEquals(expected, actual);
     }
 
-    //
-    // NEW FUNCTION CALL TESTS
-    //
-    @Test
-    @DisplayName("function call with two arguments")
-    void functionCallTwoArgs() {
-        AstNode ast = parse("round(1.234, 2)");
-        assertEquals(AstNodeType.Round, ast.getType());
-        assertEquals(2, ast.getElements().size());
-        assertEquals(AstNodeType.Number, ast.getElements().get(0).getType());
-        assertEquals(new BigDecimal("1.234"), ast.getElements().get(0).getValue());
-        assertEquals(AstNodeType.Number, ast.getElements().get(1).getType());
-        assertEquals(new BigDecimal("2"), ast.getElements().get(1).getValue());
-    }
+    // --- NEW TESTS FOR POSTFIX SYNTAX ---
 
     @Test
-    @DisplayName("function call with one argument")
-    void functionCallOneArg() {
-        AstNode ast = parse("size(\"hello\")");
-        assertEquals(AstNodeType.Size, ast.getType());
+    @DisplayName("parses a postfix function call with no arguments")
+    void postfixFunctionCallNoArgs() {
+        AstNode ast = parse("'hello'!size()");
+
+        assertEquals(AstNodeType.PostfixFunctionCall, ast.getType());
+        assertEquals("size", ast.getFunctionName());
+
+        // Check the base expression the function is called on
         assertNotNull(ast.getExpression());
         assertEquals(AstNodeType.String, ast.getExpression().getType());
         assertEquals("hello", ast.getExpression().getValue());
+
+        // Check for arguments (should be none)
+        assertEquals(Collections.emptyList(), ast.getElements());
     }
 
     @Test
-    @DisplayName("function call with date argument")
-    void functionCallDateArg() {
-        AstNode ast = parse("year(2024-01-01)");
-        assertEquals(AstNodeType.Year, ast.getType());
+    @DisplayName("parses a postfix function call with arguments")
+    void postfixFunctionCallWithArgs() {
+        AstNode ast = parse("1.234!round(2)");
+
+        assertEquals(AstNodeType.PostfixFunctionCall, ast.getType());
+        assertEquals("round", ast.getFunctionName());
+
+        // Check base expression
         assertNotNull(ast.getExpression());
-        assertEquals(AstNodeType.LocalDate, ast.getExpression().getType());
+        assertEquals(AstNodeType.Number, ast.getExpression().getType());
+        assertEquals(new BigDecimal("1.234"), ast.getExpression().getValue());
+
+        // Check arguments
+        assertNotNull(ast.getElements());
+        assertEquals(1, ast.getElements().size());
+        AstNode arg1 = ast.getElements().get(0);
+        assertEquals(AstNodeType.Number, arg1.getType());
+        assertEquals(new BigDecimal("2"), arg1.getValue());
     }
 
     @Test
-    @DisplayName("function call with no arguments")
-    void functionCallNoArgs() {
-        AstNode ast = parse("today()");
-        assertEquals(AstNodeType.Today, ast.getType());
-        assertNull(ast.getElements());
-        assertNull(ast.getExpression());
+    @DisplayName("parses chained postfix function calls")
+    void chainedPostfixCalls() {
+        AstNode ast = parse("today!year()!round(0)");
+
+        // Outermost call is round(0)
+        assertEquals(AstNodeType.PostfixFunctionCall, ast.getType());
+        assertEquals("round", ast.getFunctionName());
+
+        // The base expression for round() is the result of today!year()
+        AstNode innerCall = ast.getExpression();
+        assertEquals(AstNodeType.PostfixFunctionCall, innerCall.getType());
+        assertEquals("year", innerCall.getFunctionName());
+
+        // The base expression for year() is today
+        AstNode keyword = innerCall.getExpression();
+        assertEquals(AstNodeType.Today, keyword.getType());
     }
 
     @Test
-    @DisplayName("function call with self expression argument")
-    void functionCallSelfArg() {
-        AstNode ast = parse("size(self.a)");
-        assertEquals(AstNodeType.Size, ast.getType());
-        assertNotNull(ast.getExpression());
-        assertEquals(AstNodeType.Self, ast.getExpression().getType());
-        assertEquals(List.of("a"), ast.getExpression().getTags().getFeatures());
+    @DisplayName("parses literal types: Timestamp and Time")
+    void literalTypes() {
+        AstNode tsAst = parse("2025-06-08T10:30:00");
+        assertEquals(AstNodeType.Timestamp, tsAst.getType());
+        assertEquals(LocalDateTime.of(2025, 6, 8, 10, 30, 0), tsAst.getValue());
+
+        AstNode timeAst = parse("15:45:10");
+        assertEquals(AstNodeType.Time, timeAst.getType());
+        assertEquals(LocalTime.of(15, 45, 10), timeAst.getValue());
+
+        AstNode timeAstNoSec = parse("09:15");
+        assertEquals(AstNodeType.Time, timeAstNoSec.getType());
+        assertEquals(LocalTime.of(9, 15, 0), timeAstNoSec.getValue());
+    }
+
+    @Test
+    @DisplayName("parses new date keywords")
+    void dateKeywords() {
+        assertEquals(AstNodeType.Today, parse("today").getType());
+        assertEquals(AstNodeType.Yesterday, parse("yesterday").getType());
+        assertEquals(AstNodeType.Tomorrow, parse("tomorrow").getType());
     }
 
 }

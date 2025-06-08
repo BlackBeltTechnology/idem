@@ -19,6 +19,9 @@ public class AstNode {
     List<AstNode> elements;
     List<String> features;
 
+    // Postfix function calls
+    String functionName;
+
     AstNode list;
     AstNode indexes;
     AstNode pointers;
@@ -34,6 +37,4 @@ public class AstNode {
     AstNode tCond;
     AstNode tThen;
     AstNode tElse;
-
-
 }

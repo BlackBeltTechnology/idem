@@ -1,11 +1,22 @@
 package hu.blackbelt.idem;
 
 public enum AstNodeType {
-    Number, 
+    Number,
     Boolean,
-    Null, 
-    LocalDate,
+    Null,
+    String,
+    List,
     Self,
+
+    // Literals & Keywords
+    LocalDate,
+    Timestamp,
+    Time,
+    Today,
+    Yesterday,
+    Tomorrow,
+
+    // Expressions
     Add,
     Subtract,
     Multiply,
@@ -24,37 +35,21 @@ public enum AstNodeType {
     Lte,
     Ternary,
     In,
-    List,
-    ListAccess,
+    AddDatePart,
+    SubtractDatePart,
+    IndexAccess,
+    PointerAccess,
+
+    // New Postfix Call
+    PostfixFunctionCall,
+
+    // Internal helper types
     Block,
+    ListAccess,
+    StringAccess,
     ExprList,
     Indexes,
     Index,
-    IndexAccess,
     Pointers,
-    Tags,
-    String,
-    StringAccess,
-    PointerAccess,
-    AddDatePart,
-    SubtractDatePart,
-    Floor,
-    Ceil,
-    Round,
-    Size,
-    DayDiff,
-    WeekDiff,
-    MonthDiff,
-    YearDiff,
-    Year,
-    DayOfYear,
-    WeekOfYear,
-    MonthOfYear,
-    DayOfMonth,
-    WeekOfMonth,
-    DayOfWeek,
-    Today,
-    Yesterday,
-    Tomorrow,
-    BoolToInt
+    Tags
 }

@@ -3,35 +3,20 @@ import { AbstractParseTreeVisitor } from "antlr4ng";
 
 
 import { ParseContext } from "./IdemParser.js";
-import { BlockContext } from "./IdemParser.js";
-import { FloorFunctionCallContext } from "./IdemParser.js";
-import { CeilFunctionCallContext } from "./IdemParser.js";
-import { RoundFunctionCallContext } from "./IdemParser.js";
-import { SizeFunctionCallContext } from "./IdemParser.js";
-import { DayDiffFunctionCallContext } from "./IdemParser.js";
-import { WeekDiffFunctionCallContext } from "./IdemParser.js";
-import { MonthDiffFunctionCallContext } from "./IdemParser.js";
-import { YearDiffFunctionCallContext } from "./IdemParser.js";
-import { YearFunctionCallContext } from "./IdemParser.js";
-import { DayOfYearFunctionCallContext } from "./IdemParser.js";
-import { WeekOfYearFunctionCallContext } from "./IdemParser.js";
-import { MonthOfYearFunctionCallContext } from "./IdemParser.js";
-import { DayOfMonthFunctionCallContext } from "./IdemParser.js";
-import { WeekOfMonthFunctionCallContext } from "./IdemParser.js";
-import { DayOfWeekFunctionCallContext } from "./IdemParser.js";
-import { TodayFunctionCallContext } from "./IdemParser.js";
-import { YesterdayFunctionCallContext } from "./IdemParser.js";
-import { TomorrowFunctionCallContext } from "./IdemParser.js";
-import { BoolToIntFunctionCallContext } from "./IdemParser.js";
 import { SelfExpressionContext } from "./IdemParser.js";
 import { UnaryMinusExpressionContext } from "./IdemParser.js";
 import { NotExpressionContext } from "./IdemParser.js";
 import { NumberExpressionContext } from "./IdemParser.js";
-import { LocalDateExpressionContext } from "./IdemParser.js";
 import { BoolExpressionContext } from "./IdemParser.js";
 import { NullExpressionContext } from "./IdemParser.js";
 import { ListExpressionContext } from "./IdemParser.js";
 import { StringExpressionContext } from "./IdemParser.js";
+import { LocalDateExpressionContext } from "./IdemParser.js";
+import { TimestampExpressionContext } from "./IdemParser.js";
+import { TimeExpressionContext } from "./IdemParser.js";
+import { TodayExpressionContext } from "./IdemParser.js";
+import { YesterdayExpressionContext } from "./IdemParser.js";
+import { TomorrowExpressionContext } from "./IdemParser.js";
 import { ExpressionExpressionContext } from "./IdemParser.js";
 import { PowerExpressionContext } from "./IdemParser.js";
 import { MultiplyExpressionContext } from "./IdemParser.js";
@@ -49,6 +34,7 @@ import { AndExpressionContext } from "./IdemParser.js";
 import { OrExpressionContext } from "./IdemParser.js";
 import { TernaryExpressionContext } from "./IdemParser.js";
 import { InExpressionContext } from "./IdemParser.js";
+import { PostfixFunctionCallExpressionContext } from "./IdemParser.js";
 import { IndexedAccessExpressionContext } from "./IdemParser.js";
 import { AddDatePartExpressionContext } from "./IdemParser.js";
 import { SubtractDatePartExpressionContext } from "./IdemParser.js";
@@ -75,145 +61,6 @@ export class IdemVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      * @return the visitor result
      */
     visitParse?: (ctx: ParseContext) => Result;
-    /**
-     * Visit a parse tree produced by `IdemParser.block`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitBlock?: (ctx: BlockContext) => Result;
-    /**
-     * Visit a parse tree produced by the `floorFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitFloorFunctionCall?: (ctx: FloorFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `ceilFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitCeilFunctionCall?: (ctx: CeilFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `roundFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitRoundFunctionCall?: (ctx: RoundFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `sizeFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitSizeFunctionCall?: (ctx: SizeFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `dayDiffFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitDayDiffFunctionCall?: (ctx: DayDiffFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `weekDiffFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitWeekDiffFunctionCall?: (ctx: WeekDiffFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `monthDiffFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitMonthDiffFunctionCall?: (ctx: MonthDiffFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `yearDiffFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitYearDiffFunctionCall?: (ctx: YearDiffFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `yearFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitYearFunctionCall?: (ctx: YearFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `dayOfYearFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitDayOfYearFunctionCall?: (ctx: DayOfYearFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `weekOfYearFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitWeekOfYearFunctionCall?: (ctx: WeekOfYearFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `monthOfYearFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitMonthOfYearFunctionCall?: (ctx: MonthOfYearFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `dayOfMonthFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitDayOfMonthFunctionCall?: (ctx: DayOfMonthFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `weekOfMonthFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitWeekOfMonthFunctionCall?: (ctx: WeekOfMonthFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `dayOfWeekFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitDayOfWeekFunctionCall?: (ctx: DayOfWeekFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `todayFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitTodayFunctionCall?: (ctx: TodayFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `yesterdayFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitYesterdayFunctionCall?: (ctx: YesterdayFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `tomorrowFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitTomorrowFunctionCall?: (ctx: TomorrowFunctionCallContext) => Result;
-    /**
-     * Visit a parse tree produced by the `boolToIntFunctionCall`
-     * labeled alternative in `IdemParser.functionCall`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitBoolToIntFunctionCall?: (ctx: BoolToIntFunctionCallContext) => Result;
     /**
      * Visit a parse tree produced by the `selfExpression`
      * labeled alternative in `IdemParser.expression`.
@@ -243,13 +90,6 @@ export class IdemVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      */
     visitNumberExpression?: (ctx: NumberExpressionContext) => Result;
     /**
-     * Visit a parse tree produced by the `localDateExpression`
-     * labeled alternative in `IdemParser.expression`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitLocalDateExpression?: (ctx: LocalDateExpressionContext) => Result;
-    /**
      * Visit a parse tree produced by the `boolExpression`
      * labeled alternative in `IdemParser.expression`.
      * @param ctx the parse tree
@@ -277,6 +117,48 @@ export class IdemVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      * @return the visitor result
      */
     visitStringExpression?: (ctx: StringExpressionContext) => Result;
+    /**
+     * Visit a parse tree produced by the `localDateExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitLocalDateExpression?: (ctx: LocalDateExpressionContext) => Result;
+    /**
+     * Visit a parse tree produced by the `timestampExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitTimestampExpression?: (ctx: TimestampExpressionContext) => Result;
+    /**
+     * Visit a parse tree produced by the `timeExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitTimeExpression?: (ctx: TimeExpressionContext) => Result;
+    /**
+     * Visit a parse tree produced by the `todayExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitTodayExpression?: (ctx: TodayExpressionContext) => Result;
+    /**
+     * Visit a parse tree produced by the `yesterdayExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitYesterdayExpression?: (ctx: YesterdayExpressionContext) => Result;
+    /**
+     * Visit a parse tree produced by the `tomorrowExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitTomorrowExpression?: (ctx: TomorrowExpressionContext) => Result;
     /**
      * Visit a parse tree produced by the `expressionExpression`
      * labeled alternative in `IdemParser.expression`.
@@ -396,6 +278,13 @@ export class IdemVisitor<Result> extends AbstractParseTreeVisitor<Result> {
      * @return the visitor result
      */
     visitInExpression?: (ctx: InExpressionContext) => Result;
+    /**
+     * Visit a parse tree produced by the `postfixFunctionCallExpression`
+     * labeled alternative in `IdemParser.expression`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitPostfixFunctionCallExpression?: (ctx: PostfixFunctionCallExpressionContext) => Result;
     /**
      * Visit a parse tree produced by the `indexedAccessExpression`
      * labeled alternative in `IdemParser.expression`.

@@ -1,16 +1,14 @@
 package hu.blackbelt.idem;
 
-
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
@@ -28,180 +26,69 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
     }
 
     public AstNode visitNode(ParseTree parseTree) {
+        // A null check here provides a more informative error message
+        if (parseTree == null) {
+            throw new IllegalStateException("Attempting to visit a null parse tree node.");
+        }
         return this.visit(parseTree);
     }
 
     @Override
     public AstNode visitParse(IdemParser.ParseContext ctx) {
-        return visitNode(ctx.block());
-    }
-
-    /**
-     * This method is corrected to handle both function calls and expressions.
-     * The original implementation only handled expressions, causing the error.
-     */
-    @Override
-    public AstNode visitBlock(IdemParser.BlockContext ctx) {
-        if (ctx.functionCall() != null) {
-            return this.visitNode(ctx.functionCall());
-        }
-        if (ctx.expression() != null) {
-            return this.visitNode(ctx.expression());
-        }
-        // This case should not be reached with valid input according to the grammar.
-        return AstNode.builder()
-                .type(AstNodeType.Block)
-                .expression(null)
-                .build();
-    }
-
-    //
-    // FUNCTION CALLS
-    //
-    @Override
-    public AstNode visitFloorFunctionCall(IdemParser.FloorFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Floor)
-                .elements(List.of(visitNode(ctx.expression(0)), visitNode(ctx.expression(1))))
-                .build();
+        return visitNode(ctx.expression());
     }
 
     @Override
-    public AstNode visitCeilFunctionCall(IdemParser.CeilFunctionCallContext ctx) {
+    public AstNode visitPostfixFunctionCallExpression(IdemParser.PostfixFunctionCallExpressionContext ctx) {
         return AstNode.builder()
-                .type(AstNodeType.Ceil)
-                .elements(List.of(visitNode(ctx.expression(0)), visitNode(ctx.expression(1))))
-                .build();
-    }
-
-    @Override
-    public AstNode visitRoundFunctionCall(IdemParser.RoundFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Round)
-                .elements(List.of(visitNode(ctx.expression(0)), visitNode(ctx.expression(1))))
-                .build();
-    }
-
-    @Override
-    public AstNode visitSizeFunctionCall(IdemParser.SizeFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Size)
+                .type(AstNodeType.PostfixFunctionCall)
                 .expression(visitNode(ctx.expression()))
+                .functionName(ctx.Identifier().getText())
+                .elements(ctx.exprList() == null ? Collections.emptyList() : (visitNode(ctx.exprList())).getElements())
                 .build();
     }
 
     @Override
-    public AstNode visitDayDiffFunctionCall(IdemParser.DayDiffFunctionCallContext ctx) {
+    public AstNode visitLocalDateExpression(IdemParser.LocalDateExpressionContext ctx) {
         return AstNode.builder()
-                .type(AstNodeType.DayDiff)
-                .elements(List.of(visitNode(ctx.expression(0)), visitNode(ctx.expression(1))))
+                .type(AstNodeType.LocalDate)
+                .value(LocalDate.parse(ctx.getText(), DateTimeFormatter.ISO_LOCAL_DATE))
                 .build();
     }
 
     @Override
-    public AstNode visitWeekDiffFunctionCall(IdemParser.WeekDiffFunctionCallContext ctx) {
+    public AstNode visitTimestampExpression(IdemParser.TimestampExpressionContext ctx) {
         return AstNode.builder()
-                .type(AstNodeType.WeekDiff)
-                .elements(List.of(visitNode(ctx.expression(0)), visitNode(ctx.expression(1))))
+                .type(AstNodeType.Timestamp)
+                .value(LocalDateTime.parse(ctx.getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                 .build();
     }
 
     @Override
-    public AstNode visitMonthDiffFunctionCall(IdemParser.MonthDiffFunctionCallContext ctx) {
+    public AstNode visitTimeExpression(IdemParser.TimeExpressionContext ctx) {
+        String timeText = ctx.getText();
+        DateTimeFormatter formatter = timeText.length() > 5 ? DateTimeFormatter.ISO_LOCAL_TIME : DateTimeFormatter.ofPattern("HH:mm");
         return AstNode.builder()
-                .type(AstNodeType.MonthDiff)
-                .elements(List.of(visitNode(ctx.expression(0)), visitNode(ctx.expression(1))))
+                .type(AstNodeType.Time)
+                .value(LocalTime.parse(timeText, formatter))
                 .build();
     }
 
     @Override
-    public AstNode visitYearDiffFunctionCall(IdemParser.YearDiffFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.YearDiff)
-                .elements(List.of(visitNode(ctx.expression(0)), visitNode(ctx.expression(1))))
-                .build();
-    }
-
-    @Override
-    public AstNode visitYearFunctionCall(IdemParser.YearFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Year)
-                .expression(visitNode(ctx.expression()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitDayOfYearFunctionCall(IdemParser.DayOfYearFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.DayOfYear)
-                .expression(visitNode(ctx.expression()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitWeekOfYearFunctionCall(IdemParser.WeekOfYearFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.WeekOfYear)
-                .expression(visitNode(ctx.expression()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitMonthOfYearFunctionCall(IdemParser.MonthOfYearFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.MonthOfYear)
-                .expression(visitNode(ctx.expression()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitDayOfMonthFunctionCall(IdemParser.DayOfMonthFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.DayOfMonth)
-                .expression(visitNode(ctx.expression()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitWeekOfMonthFunctionCall(IdemParser.WeekOfMonthFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.WeekOfMonth)
-                .expression(visitNode(ctx.expression()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitDayOfWeekFunctionCall(IdemParser.DayOfWeekFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.DayOfWeek)
-                .expression(visitNode(ctx.expression()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitTodayFunctionCall(IdemParser.TodayFunctionCallContext ctx) {
+    public AstNode visitTodayExpression(IdemParser.TodayExpressionContext ctx) {
         return AstNode.builder().type(AstNodeType.Today).build();
     }
 
     @Override
-    public AstNode visitYesterdayFunctionCall(IdemParser.YesterdayFunctionCallContext ctx) {
+    public AstNode visitYesterdayExpression(IdemParser.YesterdayExpressionContext ctx) {
         return AstNode.builder().type(AstNodeType.Yesterday).build();
     }
 
     @Override
-    public AstNode visitTomorrowFunctionCall(IdemParser.TomorrowFunctionCallContext ctx) {
+    public AstNode visitTomorrowExpression(IdemParser.TomorrowExpressionContext ctx) {
         return AstNode.builder().type(AstNodeType.Tomorrow).build();
     }
 
-    @Override
-    public AstNode visitBoolToIntFunctionCall(IdemParser.BoolToIntFunctionCallContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.BoolToInt)
-                .expression(visitNode(ctx.expression()))
-                .build();
-    }
-
-    // ... All other existing visit methods remain unchanged ...
     @Override
     public AstNode visitNumberExpression(IdemParser.NumberExpressionContext ctx) {
         return AstNode.builder()
@@ -211,23 +98,10 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
     }
 
     @Override
-    public AstNode visitLocalDateExpression(IdemParser.LocalDateExpressionContext ctx) {
-        var sdf = new SimpleDateFormat("yyyy-MM-dd");
-        try {
-            return AstNode.builder()
-                    .type(AstNodeType.LocalDate)
-                    .value(sdf.parse(ctx.getText()))
-                    .build();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public AstNode visitBoolExpression(IdemParser.BoolExpressionContext ctx) {
         return AstNode.builder()
                 .type(AstNodeType.Boolean)
-                .value(ctx.getText() == null ? false : Boolean.valueOf(ctx.getText().toLowerCase()))
+                .value(Boolean.valueOf(ctx.getText()))
                 .build();
     }
 
@@ -239,49 +113,19 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
     @Override
     public AstNode visitStringExpression(IdemParser.StringExpressionContext ctx) {
         var raw = ctx.getText();
-        Pattern regex = Pattern.compile("(['\"])(.*?)\\1");
-        Matcher matcher = regex.matcher(raw);
-
-        String unquoted = null;
-        if (matcher.find()) {
-            unquoted = matcher.group(2);
-        }
         return AstNode.builder()
                 .type(AstNodeType.String)
-                .value(unquoted)
+                .value(raw.substring(1, raw.length() - 1))
                 .build();
     }
 
     @Override
     public AstNode visitIndexedAccessExpression(IdemParser.IndexedAccessExpressionContext ctx) {
-        IdemParser.ExpressionContext baseExprCtx = ctx.expression();
-
-        // If the expression being indexed is a list literal...
-        if (baseExprCtx instanceof IdemParser.ListExpressionContext) {
-            return AstNode.builder()
-                    .type(AstNodeType.ListAccess)
-                    .list(this.visitNode(baseExprCtx))
-                    .indexes(this.visitNode(ctx.indexes()))
-                    .build();
-        }
-        // If the expression being indexed is a string literal...
-        else if (baseExprCtx instanceof IdemParser.StringExpressionContext) {
-            String unquoted = baseExprCtx.getText();
-            unquoted = unquoted.substring(1, unquoted.length() - 1);
-            return AstNode.builder()
-                    .type(AstNodeType.StringAccess)
-                    .value(unquoted)
-                    .indexes(this.visitNode(ctx.indexes()))
-                    .build();
-        }
-        // For all other expressions (variables, function calls, etc.)...
-        else {
-            return AstNode.builder()
-                    .type(AstNodeType.IndexAccess)
-                    .expression(this.visitNode(baseExprCtx))
-                    .indexes(this.visitNode(ctx.indexes()))
-                    .build();
-        }
+        return AstNode.builder()
+                .type(AstNodeType.IndexAccess)
+                .expression(this.visitNode(ctx.expression()))
+                .indexes(this.visitNode(ctx.indexes()))
+                .build();
     }
 
     @Override
@@ -300,8 +144,6 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
     @Override
     public AstNode visitList(IdemParser.ListContext ctx) {
         if (ctx.exprList() != null) {
-            // We visit the exprList, which returns an AstNode of type ExprList
-            // containing the list of elements. We then extract this list for the List node.
             AstNode exprListNode = this.visitNode(ctx.exprList());
             return AstNode.builder()
                     .type(AstNodeType.List)
@@ -383,12 +225,10 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
 
     @Override
     public AstNode visitSelfExpression(IdemParser.SelfExpressionContext ctx) {
-        //System.out.println("SELF: " + ctx.getText());
         return AstNode.builder()
                 .type(AstNodeType.Self)
                 .tags(this.visitNode(ctx.tags()))
                 .build();
-        //return super.visitSelfExpression(ctx);
     }
 
     @Override

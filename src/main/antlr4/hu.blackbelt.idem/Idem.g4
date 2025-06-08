@@ -1,204 +1,151 @@
 grammar Idem;
 
 parse
- : block EOF
- ;
-
-block
- : (functionCall  | expression)
- ;
-
-functionCall
- : Floor OParen expression  ',' expression CParen        #floorFunctionCall
- | Ceil OParen expression  ',' expression CParen         #ceilFunctionCall
- | Round OParen expression ',' expression CParen         #roundFunctionCall
- | Size OParen expression CParen                         #sizeFunctionCall
- | DayDiff OParen expression ',' expression CParen       #dayDiffFunctionCall
- | WeekDiff OParen expression ',' expression CParen      #weekDiffFunctionCall
- | MonthDiff OParen expression ',' expression CParen     #monthDiffFunctionCall
- | YearDiff OParen expression ',' expression CParen      #yearDiffFunctionCall
- | Year        OParen expression CParen                  #yearFunctionCall
- | DayOfYear   OParen expression CParen                  #dayOfYearFunctionCall
- | WeekOfYear  OParen expression CParen                  #weekOfYearFunctionCall
- | MonthOfYear OParen expression CParen                  #monthOfYearFunctionCall
- | DayOfMonth  OParen expression CParen                  #dayOfMonthFunctionCall
- | WeekOfMonth OParen expression CParen                  #weekOfMonthFunctionCall
- | DayOfWeek   OParen expression CParen                  #dayOfWeekFunctionCall
- | Today OParen CParen                                   #todayFunctionCall
- | Yesterday OParen CParen                               #yesterdayFunctionCall
- | Tomorrow OParen CParen                                #tomorrowFunctionCall
- | BoolToInt OParen expression CParen                    #boolToIntFunctionCall
- ;
+  : expression EOF
+  ;
 
 expression
- : Self tags                                #selfExpression
- | Subtract expression                      #unaryMinusExpression
- | Excl expression                          #notExpression
- | expression Pow expression                #powerExpression
- | expression indexes                       #indexedAccessExpression
- | expression Multiply expression           #multiplyExpression
- | expression Divide expression             #divideExpression
- | expression Modulus expression            #modulusExpression
- | expression Add expression                #addExpression
- | expression Subtract expression           #subtractExpression
- | expression Add DatePart                  #addDatePartExpression
- | expression Subtract DatePart             #subtractDatePartExpression
- | expression GTEquals expression           #gtEqExpression
- | expression LTEquals expression           #ltEqExpression
- | expression GT expression                 #gtExpression
- | expression LT expression                 #ltExpression
- | expression Equals expression             #eqExpression
- | expression NEquals expression            #notEqExpression
- | expression And expression                #andExpression
- | expression Or expression                 #orExpression
- | expression '?' expression ':' expression #ternaryExpression
- | expression In expression                 #inExpression
- | Number                                   #numberExpression
- | LocalDate                                #localDateExpression
- | Bool                                     #boolExpression
- | Null                                     #nullExpression
- | list                                     #listExpression
- | String                                   #stringExpression
- | OParen expression CParen pointers?       #expressionExpression
- ;
+  : expression '!' Identifier '(' exprList? ')' #postfixFunctionCallExpression
+  | Self tags                                 #selfExpression
+  | Subtract expression                       #unaryMinusExpression
+  | Excl expression                           #notExpression
+  | expression Pow expression                 #powerExpression
+  | expression indexes                        #indexedAccessExpression
+  | expression Multiply expression            #multiplyExpression
+  | expression Divide expression              #divideExpression
+  | expression Modulus expression             #modulusExpression
+  | expression Add expression                 #addExpression
+  | expression Subtract expression            #subtractExpression
+  | expression Add DatePart                   #addDatePartExpression
+  | expression Subtract DatePart              #subtractDatePartExpression
+  | expression GTEquals expression            #gtEqExpression
+  | expression LTEquals expression            #ltEqExpression
+  | expression GT expression                  #gtExpression
+  | expression LT expression                  #ltExpression
+  | expression Equals expression              #eqExpression
+  | expression NEquals expression             #notEqExpression
+  | expression And expression                 #andExpression
+  | expression Or expression                  #orExpression
+  | expression '?' expression ':' expression  #ternaryExpression
+  | expression In expression                  #inExpression
+  | Number                                    #numberExpression
+  | Bool                                      #boolExpression
+  | Null                                      #nullExpression
+  | list                                      #listExpression
+  | String                                    #stringExpression
+  | LocalDate                                 #localDateExpression
+  | Timestamp                                 #timestampExpression
+  | Time                                      #timeExpression
+  | Today                                     #todayExpression
+  | Yesterday                                 #yesterdayExpression
+  | Tomorrow                                  #tomorrowExpression
+  | OParen expression CParen pointers?        #expressionExpression
+  ;
 
 list
- : '[' exprList? ']'
- ;
+  : '[' exprList? ']'
+  ;
 
 indexes
- : ('[' expression ']')+
- ;
+  : ('[' expression ']')+
+  ;
 
 pointers
- : (pointer)+
- ;
+  : (pointer)+
+  ;
 
 pointer
- : tags
- | indexes
- ;
+  : tags
+  | indexes
+  ;
 
 tags
- : ('.' feature )+
- ;
+  : ('.' feature )+
+  ;
 
 feature
- : Identifier
- ;
+  : Identifier
+  ;
 
 exprList
- : expression (',' expression)*
- ;
+  : expression (',' expression)*
+  ;
 
-Self     : 'self';
-Size     : 'size';
-In       : 'in';
-Null     : 'null';
+Self      : 'self';
+In        : 'in';
+Null      : 'null';
+Today     : 'today';
+Yesterday : 'yesterday';
+Tomorrow  : 'tomorrow';
 
-DayDiff    : 'dayDiff';
-WeekDiff   : 'weekDiff';
-MonthDiff  : 'monthDiff';
-YearDiff   : 'yearDiff';
-
-Year        : 'year';
-DayOfYear   : 'dayOfYear';
-WeekOfYear  : 'weekOfYear';
-MonthOfYear : 'monthOfYear';
-DayOfMonth  : 'dayOfMonth';
-WeekOfMonth : 'weekOfMonth';
-DayOfWeek   : 'dayOfWeek';
-Today       : 'today';
-Yesterday   : 'yesterday';
-Tomorrow    : 'tomorrow';
-Choice      : 'choice';
-Floor       : 'floor';
-Ceil        : 'ceil';
-Round       : 'round';
-BoolToInt   : 'boolToInt';
-
-Or       : '||';
-And      : '&&';
-Equals   : '==';
-NEquals  : '!=';
-GTEquals : '>=';
-LTEquals : '<=';
-Pow      : '^';
-Excl     : '!';
-GT       : '>';
-LT       : '<';
-Add      : '+';
-Subtract : '-';
-Multiply : '*';
-Divide   : '/';
-Modulus  : '%';
-OBracket : '[';
-CBracket : ']';
-OParen   : '(';
-CParen   : ')';
-SColon   : ';';
-Assign   : '=';
-Comma    : ',';
-QMark    : '?';
-Colon    : ':';
+Or        : '||';
+And       : '&&';
+Equals    : '==';
+NEquals   : '!=';
+GTEquals  : '>=';
+LTEquals  : '<=';
+Pow       : '^';
+Excl      : '!';
+GT        : '>';
+LT        : '<';
+Add       : '+';
+Subtract  : '-';
+Multiply  : '*';
+Divide    : '/';
+Modulus   : '%';
+OBracket  : '[';
+CBracket  : ']';
+OParen    : '(';
+CParen    : ')';
+SColon    : ';';
+Assign    : '=';
+Comma     : ',';
+QMark     : '?';
+Colon     : ':';
 
 Bool
- : 'true' 
- | 'false'
- ;
+  : 'true'
+  | 'false'
+  ;
 
 Identifier
- : (Char | Unicode | Underscore) (Char | Digit | Unicode | Underscore)*
- ;
+  : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')*
+  ;
 
 Number
- : Int ('.' Digit*)?
- ;
-
+  : Int ('.' Digit*)?
+  ;
 
 String
- : ["] (~["\r\n] | '\\\\' | '\\"')* ["]
- | ['] (~['\r\n] | '\\\\' | '\\\'')* [']
- ;
+  : ["] (~["\r\n] | '\\\\' | '\\"')* ["]
+  | ['] (~['\r\n] | '\\\\' | '\\\'')* [']
+  ;
 
 LocalDate
- : Digit Digit Digit Digit '-' Digit Digit '-' Digit Digit
- ;
+  : Digit Digit Digit Digit '-' Digit Digit '-' Digit Digit
+  ;
+
+Timestamp
+  : LocalDate 'T' Digit Digit ':' Digit Digit ':' Digit Digit
+  ;
+
+Time
+  : Digit Digit ':' Digit Digit (':' Digit Digit)?
+  ;
 
 DatePart
- : Number ([Dd] | [Ww] | [Mm] | [Yy])
- ;
-
+  : Number ([Dd] | [Ww] | [Mm] | [Yy])
+  ;
 
 Space
- : [ \t\r\n\u000C] -> skip
- ;
+  : [ \t\r\n\u000C] -> skip
+  ;
 
 fragment Int
- : [1-9] Digit*
- | '0'
- ;
+  : [1-9] Digit*
+  | '0'
+  ;
 
-fragment Dot
- : '.'
- ;
-
-fragment Digit 
- : [0-9]
- ;
-
-fragment Char
- : ('A'..'Z')
- | ('a'..'z')
- ;
-
-fragment Underscore
- : '_'
- ;
-
-fragment Empty
- : ' '
- ;
-
-fragment Unicode
- : '\u00C0'..'\uFFFF';
+fragment Digit
+  : [0-9]
+  ;

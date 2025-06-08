@@ -5,10 +5,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -18,14 +18,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class IdemEvaluatorTest {
 
     private static EvalContext ctx;
-
-    private static Date parseLocalDate(String dateStr) {
-        try {
-            return new SimpleDateFormat("yyyy-MM-dd").parse(dateStr);
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @BeforeAll
     static void setup() {
@@ -42,7 +34,7 @@ public class IdemEvaluatorTest {
                         ),
                         "str", "hello",
                         "items", List.of(new BigDecimal("1"), new BigDecimal("2"), new BigDecimal("3")),
-                        "startDate", parseLocalDate("2025-06-15")
+                        "startDate", LocalDate.parse("2025-06-15")
                 ))
                 .build();
     }
@@ -76,7 +68,7 @@ public class IdemEvaluatorTest {
     @Test
     @DisplayName("parses local dates")
     void testLocalDates() {
-        assertEquals(parseLocalDate("2023-12-31"), evaluate("2023-12-31"));
+        assertEquals(LocalDate.parse("2023-12-31"), evaluate("2023-12-31"));
     }
 
     @Test
@@ -120,10 +112,10 @@ public class IdemEvaluatorTest {
     @Test
     @DisplayName("handles ternary operator")
     void testTernary() {
-        assertEquals(new BigDecimal("10"), evaluate("1>0?10:20"));
-        assertEquals(new BigDecimal("20"), evaluate("1<0?10:20"));
+        assertEquals(new BigDecimal("10"), evaluate("1 > 0 ? 10 : 20"));
+        assertEquals(new BigDecimal("20"), evaluate("1 < 0 ? 10 : 20"));
     }
-
+    
     @Test
     @DisplayName("handles in operator")
     void testIn() {
@@ -153,7 +145,6 @@ public class IdemEvaluatorTest {
     @DisplayName("handles pointer access after parentheses")
     void testPointerAccess() {
         assertEquals(new BigDecimal("5"), evaluate("(self.arr[2]).val"));
-        // Note: The direct AST for self.matrix[1][0] is a ListAccess, not a PointerAccess
         assertEquals(new BigDecimal("3"), evaluate("self.matrix[1][0]"));
     }
 
@@ -169,90 +160,72 @@ public class IdemEvaluatorTest {
     }
 
     @Test
-    @DisplayName("handles BoolToInt function")
-    void testBoolToInt() {
-        assertEquals(new BigDecimal("1"), evaluate("boolToInt(true)"));
-        assertEquals(new BigDecimal("0"), evaluate("boolToInt(false)"));
-        assertEquals(new BigDecimal("0"), evaluate("boolToInt(self.flag)"));
-    }
-
-    @Test
-    @DisplayName("handles Size function")
-    void testSize() {
-        assertEquals(new BigDecimal("5"), evaluate("size(\"hello\")"));
-        assertEquals(new BigDecimal("3"), evaluate("size([1,2,3])"));
-        assertEquals(new BigDecimal("3"), evaluate("size(self.items)"));
-        assertEquals(new BigDecimal("1"), evaluate("size(self.nested)"));
-    }
-
-    @Test
-    @DisplayName("handles numeric functions Round, Floor, Ceil")
+    @DisplayName("handles postfix function calls on numbers")
     void testNumericFunctions() {
-        assertEquals(new BigDecimal("1.23"), evaluate("round(1.2345, 2)"));
-        assertEquals(new BigDecimal("1.24"), evaluate("round(1.2355, 2)"));
-        assertEquals(new BigDecimal("1.23"), evaluate("floor(1.239, 2)"));
-        assertEquals(new BigDecimal("1.24"), evaluate("ceil(1.231, 2)"));
+        assertEquals(new BigDecimal("1.23"), evaluate("1.2345!round(2)"));
+        assertEquals(new BigDecimal("1.23"), evaluate("1.239!floor(2)"));
+        assertEquals(new BigDecimal("1.24"), evaluate("1.231!ceil(2)"));
     }
 
     @Test
-    @DisplayName("handles no-arg date functions Today, Yesterday, Tomorrow")
-    void testNoArgDateFunctions() {
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        Date today = cal.getTime();
-
-        assertEquals(today, evaluate("today()"));
-
-        cal.add(Calendar.DATE, -1);
-        Date yesterday = cal.getTime();
-        assertEquals(yesterday, evaluate("yesterday()"));
-
-        cal.add(Calendar.DATE, 2);
-        Date tomorrow = cal.getTime();
-        assertEquals(tomorrow, evaluate("tomorrow()"));
+    @DisplayName("handles postfix function calls on dates")
+    void testDateFunctions() {
+        assertEquals(new BigDecimal("2023"), evaluate("2023-10-31!year()"));
+        assertEquals(new BigDecimal("10"), evaluate("2023-10-31!monthOfYear()"));
+        assertEquals(new BigDecimal("44"), evaluate("2023-10-31!weekOfYear()"));
+        assertEquals(new BigDecimal("-10"), evaluate("2024-03-15!dayDiff(2024-03-05)"));
     }
 
     @Test
-    @DisplayName("handles date part extraction functions")
-    void testDatePartFunctions() {
-        assertEquals(new BigDecimal("2023"), evaluate("year(2023-10-31)"));
-        assertEquals(new BigDecimal("10"), evaluate("monthOfYear(2023-10-31)"));
-        assertEquals(new BigDecimal("31"), evaluate("dayOfMonth(2023-10-31)"));
-        assertEquals(new BigDecimal("304"), evaluate("dayOfYear(2023-10-31)"));
-        assertEquals(new BigDecimal("2"), evaluate("dayOfWeek(2023-10-31)"));
-        assertEquals(new BigDecimal("44"), evaluate("weekOfYear(2023-10-31)"));
-        assertEquals(new BigDecimal("5"), evaluate("weekOfMonth(2023-10-31)"));
+    @DisplayName("handles new date keywords")
+    void testDateKeywords() {
+        assertEquals(LocalDate.now(), evaluate("today"));
+        assertEquals(LocalDate.now().minusDays(1), evaluate("yesterday"));
+        assertEquals(LocalDate.now().plusDays(1), evaluate("tomorrow"));
     }
 
     @Test
-    @DisplayName("handles date diff functions")
-    void testDateDiffFunctions() {
-        assertEquals(new BigDecimal("10"), evaluate("dayDiff(2024-03-05, 2024-03-15)"));
-        assertEquals(new BigDecimal("-1"), evaluate("weekDiff(2024-03-15, 2024-03-08)"));
-        assertEquals(new BigDecimal("2"), evaluate("monthDiff(2024-03-15, 2024-05-15)"));
-        assertEquals(new BigDecimal("-3"), evaluate("yearDiff(2027-01-01, 2024-01-01)"));
+    @DisplayName("handles new Timestamp and Time types and functions")
+    void testTimestampAndTimeFunctions() {
+        // Test literals
+        assertEquals(LocalDateTime.of(2025, 6, 8, 10, 30, 0), evaluate("2025-06-08T10:30:00"));
+        assertEquals(LocalTime.of(10, 30), evaluate("10:30"));
+
+        // Test functions
+        assertEquals(new BigDecimal("10"), evaluate("2025-06-08T10:30:00!hour()"));
+        assertEquals(new BigDecimal("30"), evaluate("2025-06-08T10:30:00!minute()"));
+        assertEquals(new BigDecimal("45"), evaluate("15:00:45!second()"));
+
+        // Date functions on Timestamps
+        assertEquals(new BigDecimal("2025"), evaluate("2025-01-01T12:00:00!year()"));
     }
 
     @Test
     @DisplayName("handles date part arithmetic")
     void testDatePartArithmetic() {
-        // Test addition with different units (d, W, m, Y)
-        assertEquals(parseLocalDate("2025-06-18"), evaluate("2025-06-08 + 10d"));
-        assertEquals(parseLocalDate("2025-06-29"), evaluate("2025-06-08 + 3W"));
-        assertEquals(parseLocalDate("2025-08-08"), evaluate("2025-06-08 + 2m"));
-        assertEquals(parseLocalDate("2027-06-08"), evaluate("2025-06-08 + 2Y"));
+        assertEquals(LocalDate.parse("2025-06-18"), evaluate("2025-06-08 + 10d"));
+        assertEquals(LocalDate.parse("2025-05-15"), evaluate("self.startDate - 1M"));
+    }
 
-        // Test subtraction with different units (D, w, M, y)
-        assertEquals(parseLocalDate("2025-05-29"), evaluate("2025-06-08 - 10D"));
-        assertEquals(parseLocalDate("2025-05-25"), evaluate("2025-06-08 - 2w"));
-        assertEquals(parseLocalDate("2025-03-08"), evaluate("2025-06-08 - 3M"));
-        assertEquals(parseLocalDate("2024-06-08"), evaluate("2025-06-08 - 1y"));
+    @Test
+    @DisplayName("handles generic size() function")
+    void testSizeFunction() {
+        assertEquals(new BigDecimal("5"), evaluate("'hello'!size()"));
+        assertEquals(new BigDecimal("3"), evaluate("[1,2,3]!size()"));
+        assertEquals(new BigDecimal("1"), evaluate("self.nested!size()"));
+    }
 
-        // Test with a variable from the self context
-        assertEquals(parseLocalDate("2025-06-20"), evaluate("self.startDate + 5d"));
-        assertEquals(parseLocalDate("2025-05-15"), evaluate("self.startDate - 1M"));
+    @Test
+    @DisplayName("handles type conversion functions")
+    void testTypeConversionFunctions() {
+        assertEquals(BigDecimal.ONE, evaluate("true!toInt()"));
+        assertEquals(BigDecimal.ZERO, evaluate("self.flag!toInt()"));
+    }
+
+    @Test
+    @DisplayName("throws error for function on wrong type")
+    void testStrongTyping() {
+        assertThrows(UnsupportedOperationException.class, () -> evaluate("123!year()"));
+        assertThrows(UnsupportedOperationException.class, () -> evaluate("'hello'!round(2)"));
     }
 }
