@@ -250,4 +250,126 @@ class ParserTest {
 
         assertEquals(expected, actual);
     }
+
+    @Test
+    @DisplayName("mixes arithmetic with multiple self chains")
+    void mixesArithmeticWithMultipleSelfChains() {
+        AstNode actual = parse("self.x + self.y * self.z");
+
+        AstNode expected = AstNode.builder()
+                .type(AstNodeType.Add)
+                .left(
+                        AstNode.builder().type(AstNodeType.Self)
+                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("x")).build())
+                                .build()
+                )
+                .right(
+                        AstNode.builder().type(AstNodeType.Multiply)
+                                .left(
+                                        AstNode.builder().type(AstNodeType.Self)
+                                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("y")).build())
+                                                .build()
+                                )
+                                .right(
+                                        AstNode.builder().type(AstNodeType.Self)
+                                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("z")).build())
+                                                .build()
+                                )
+                                .build()
+                )
+                .build();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @DisplayName("handles a ternary using self chains")
+    void handlesTernaryUsingSelfChains() {
+        AstNode actual = parse("self.enabled ? self.onValue : self.offValue");
+
+        AstNode expected = AstNode.builder()
+                .type(AstNodeType.Ternary)
+                .tCond(
+                        AstNode.builder().type(AstNodeType.Self)
+                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("enabled")).build())
+                                .build()
+                )
+                .tThen(
+                        AstNode.builder().type(AstNodeType.Self)
+                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("onValue")).build())
+                                .build()
+                )
+                .tElse(
+                        AstNode.builder().type(AstNodeType.Self)
+                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("offValue")).build())
+                                .build()
+                )
+                .build();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @DisplayName("combines logical and unary with self chains")
+    void combinesLogicalAndUnaryWithSelfChains() {
+        AstNode actual = parse("!self.isValid && self.items.length > 0");
+
+        AstNode expected = AstNode.builder()
+                .type(AstNodeType.And)
+                .left(
+                        AstNode.builder().type(AstNodeType.Not)
+                                .expression(
+                                        AstNode.builder().type(AstNodeType.Self)
+                                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("isValid")).build())
+                                                .build()
+                                )
+                                .build()
+                )
+                .right(
+                        AstNode.builder().type(AstNodeType.Gt)
+                                .left(
+                                        AstNode.builder().type(AstNodeType.Self)
+                                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("items", "length")).build())
+                                                .build()
+                                )
+                                .right(
+                                        AstNode.builder().type(AstNodeType.Number).value(new BigDecimal("0")).build()
+                                )
+                                .build()
+                )
+                .build();
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    @DisplayName("respects parentheses around self chains in mixed arithmetic")
+    void respectsParenthesesAroundSelfChains() {
+        AstNode actual = parse("(self.a + self.b) * self.c");
+
+        AstNode expected = AstNode.builder()
+                .type(AstNodeType.Multiply)
+                .left(
+                        AstNode.builder().type(AstNodeType.Add)
+                                .left(
+                                        AstNode.builder().type(AstNodeType.Self)
+                                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("a")).build())
+                                                .build()
+                                )
+                                .right(
+                                        AstNode.builder().type(AstNodeType.Self)
+                                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("b")).build())
+                                                .build()
+                                )
+                                .build()
+                )
+                .right(
+                        AstNode.builder().type(AstNodeType.Self)
+                                .tags(AstNode.builder().type(AstNodeType.Tags).features(List.of("c")).build())
+                                .build()
+                )
+                .build();
+
+        assertEquals(expected, actual);
+    }
 }

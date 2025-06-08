@@ -118,10 +118,6 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
         return base;
     }
 
-    /**
-     * Visits the helper-rule 'list'. It constructs a List AST node.
-     * The elements of the list are populated by visiting the 'exprList' context.
-     */
     @Override
     public AstNode visitList(IdemParser.ListContext ctx) {
         if (ctx.exprList() != null) {
@@ -139,10 +135,6 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
                 .build();
     }
 
-    /**
-     * Visits the helper-rule 'exprList'. It creates a temporary node to hold
-     * the evaluated expressions, which is then used by visitList.
-     */
     @Override
     public AstNode visitExprList(IdemParser.ExprListContext ctx) {
         return AstNode.builder()
@@ -155,10 +147,6 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
                 .build();
     }
 
-    /**
-     * Visits the helper-rule 'indexes'. It constructs an Indexes AST node
-     * containing a list of evaluated index expressions.
-     */
     @Override
     public AstNode visitIndexes(IdemParser.IndexesContext ctx) {
         return AstNode.builder()
@@ -171,10 +159,6 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
                 .build();
     }
 
-    /**
-     * Visits the helper-rule 'pointers'. It constructs a Pointers AST node
-     * containing a list of evaluated pointer nodes.
-     */
     @Override
     public AstNode visitPointers(IdemParser.PointersContext ctx) {
         return AstNode.builder()
@@ -187,10 +171,6 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
                 .build();
     }
 
-    /**
-     * Visits the helper-rule 'pointer'. A pointer can either be
-     * a tag-based access or an index-based access.
-     */
     @Override
     public AstNode visitPointer(IdemParser.PointerContext ctx) {
         if (ctx.tags() != null) {
@@ -202,10 +182,6 @@ public class IdemDefaultVisitor extends IdemBaseVisitor {
                 .build();
     }
 
-    /**
-     * Visits the helper-rule 'tags'. It constructs a Tags AST node
-     * containing a list of feature identifiers (strings).
-     */
     @Override
     public AstNode visitTags(IdemParser.TagsContext ctx) {
         return AstNode.builder()
