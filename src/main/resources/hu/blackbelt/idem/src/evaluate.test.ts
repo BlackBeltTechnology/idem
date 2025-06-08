@@ -6,7 +6,8 @@ import { parseLocalDate } from './utils/datetime';
 
 const ctx = {
   self: {
-    a: 1,
+    name: "Idem Language",
+    a: 1.5,
     b: 2,
     flag: false,
     nested: { x: 42 },
@@ -14,6 +15,7 @@ const ctx = {
     matrix: [[1, 2], [3, 4]],
     items: [1, 2, 3],
     startDate: new Date('2025-06-15T00:00:00.000Z'),
+    maybeNull: null,
   },
 };
 
@@ -42,7 +44,7 @@ describe('evaluate', () => {
   // });
 
   it('resolves simple self properties', () => {
-    expect(evaluate(expressionToAst('self.a'), ctx)).toBe(1);
+    expect(evaluate(expressionToAst('self.a'), ctx)).toBe(1.5);
     expect(evaluate(expressionToAst('self.nested.x'), ctx)).toBe(42);
   });
 
@@ -97,7 +99,7 @@ describe('evaluate', () => {
   });
 
   it('evaluates a complex combined expression', () => {
-    const expr = '!(self.a+self.b>2) && (self.items in [1,2,3]) ? self.matrix[0][1] : self.nested.x';
+    const expr = '!(self.a+self.b>4) && (self.items in [1,2,3]) ? self.matrix[0][1] : self.nested.x';
     expect(evaluate(expressionToAst(expr), ctx)).toBe(42);
   });
 
@@ -105,6 +107,7 @@ describe('evaluate', () => {
     expect(evalExpr('1.2345!round(2)')).toBe(1.23);
     expect(evalExpr('1.239!floor(2)')).toBe(1.23);
     expect(evalExpr('1.231!ceil(2)')).toBe(1.24);
+    expect(evalExpr('self.a!round()')).toBe(2);
   });
 
   it('evaluates postfix functions on dates', () => {
@@ -112,6 +115,8 @@ describe('evaluate', () => {
     expect(evalExpr("2023-10-31T10:20:30!hour()")).toBe(10);
     const expectedDiff = differenceInDays(new Date('2024-03-05'), new Date('2024-03-15'));
     expect(evalExpr("2024-03-15!dayDiff(2024-03-05)")).toBe(expectedDiff);
+    // 1 day = 86400 seconds
+    expect(evalExpr('2025-06-09!difference(2025-06-10)')).toBe(86400);
   });
 
   it('evaluates new date keywords', () => {
@@ -119,6 +124,19 @@ describe('evaluate', () => {
     expect(evalExpr('today')).toEqual(today);
     expect(evalExpr('yesterday')).toEqual(subDays(today, 1));
     expect(evalExpr('tomorrow')).toEqual(addDays(today, 1));
+  });
+
+    it('evaulates string functions', () => {
+    expect(evalExpr('self.name!lowerCase()')).toBe('idem language');
+    expect(evalExpr('self.name!upperCase()')).toBe('IDEM LANGUAGE');
+    expect(evalExpr('self.name!length()')).toBe(13);
+    expect(evalExpr("'  abc  '!trim()")).toBe('abc');
+    expect(evalExpr("'hello'!substring(1, 3)")).toBe('ell');
+    expect(evalExpr("'hello'!first(2)")).toBe('he');
+    expect(evalExpr("'hello'!last(2)")).toBe('lo');
+    expect(evalExpr("'hello world'!position('world')")).toBe(6);
+    expect(evalExpr("'abc-123'!matches('[a-z]+-\\d+')")).toBe(true);
+    expect(evalExpr("'a b c'!replace(' ', '-')")).toBe('a-b-c');
   });
 
   it('evaluates generic size() function', () => {
@@ -133,7 +151,7 @@ describe('evaluate', () => {
 
   it('handles robust arithmetic', () => {
     expect(evalExpr('0.1 + 0.2')).toBeCloseTo(0.3);
-    expect(evalExpr('self.a + self.b')).toBe(3);
+    expect(evalExpr('self.a + self.b')).toBe(3.5);
   });
 
   it('handles robust comparisons', () => {
@@ -148,6 +166,13 @@ describe('evaluate', () => {
 
   it('handles pointer access', () => {
     expect(evalExpr('(self.arr[2]).val')).toBe(5);
+  });
+
+
+  it('handles defined / undefined functions', () => {
+    expect(evalExpr('self.a!isDefined()')).toBe(true);
+    expect(evalExpr('self.maybeNull!isDefined()')).toBe(false);
+    expect(evalExpr('self.maybeNull!isUndefined()')).toBe(true);
   });
 
   it('throws error for function on wrong type', () => {

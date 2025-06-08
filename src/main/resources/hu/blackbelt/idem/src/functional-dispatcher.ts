@@ -1,33 +1,53 @@
-// FunctionDispatcher.ts
 import {
-  addDays, addMonths, addWeeks, addYears,
-  differenceInDays, differenceInMonths, differenceInWeeks, differenceInYears,
-  getDay, getDayOfYear, getHours, getMinutes, getMonth, getSeconds, getWeek, getWeekOfMonth, getYear
+  addDays, addMonths, addWeeks, addYears, differenceInDays, differenceInMonths, differenceInSeconds,
+  differenceInWeeks, differenceInYears, getDay, getDayOfYear, getHours, getMinutes,
+  getMonth, getSeconds, getWeek, getWeekOfMonth, getYear
 } from 'date-fns';
 
 type Func = (base: any, args: any[]) => any;
 
-const roundToPrecision = (val: number, precision: number, op: 'round' | 'floor' | 'ceil'): number => {
+// Helper for rounding to a specific precision with native numbers
+const roundToPrecision = (val: number, precision: number): number => {
   const factor = 10 ** precision;
-  return Math[op](val * factor) / factor;
+  return Math.round(val * factor) / factor;
+};
+
+// --- Function Maps ---
+const OBJECT_FUNCTIONS: Record<string, Func> = {
+  isDefined: (val) => val !== null && val !== undefined,
+  isUndefined: (val) => val === null || val === undefined,
+  size: (val) => {
+    if (Array.isArray(val) || typeof val === 'string') return val.length;
+    if (typeof val === 'object' && val !== null) return Object.keys(val).length;
+    throw new Error(`size() cannot be called on Array, Object or String.`);
+  },
+  toInt: (val) => (typeof val === 'boolean' ? (val ? 1 : 0) : undefined),
 };
 
 const NUMBER_FUNCTIONS: Record<string, Func> = {
-  round: (val, args) => roundToPrecision(val, args[0], 'round'),
-  floor: (val, args) => roundToPrecision(val, args[0], 'floor'), // CORRECTED
-  ceil: (val, args) => roundToPrecision(val, args[0], 'ceil'),
+  // Overloaded: handles round() and round(precision)
+  round: (val, args) => roundToPrecision(val, args[0] ?? 0),
+  floor: (val, args) => {
+    const p = args[0] ?? 0;
+    return Math.floor(val * 10 ** p) / 10 ** p;
+  },
+  ceil: (val, args) => {
+    const p = args[0] ?? 0;
+    return Math.ceil(val * 10 ** p) / 10 ** p;
+  },
 };
 
-const GENERIC_FUNCTIONS: Record<string, Func> = {
-  size: (val) => {
-    if (typeof val === 'string' || Array.isArray(val)) return val.length;
-    if (typeof val === 'object' && val !== null) return Object.keys(val).length;
-    throw new Error(`size() cannot be called on type ${typeof val}`);
-  },
-  toInt: (val) => {
-    if (typeof val === 'boolean') return val ? 1 : 0;
-    throw new Error(`toInt() cannot be called on type ${typeof val}`);
-  },
+const STRING_FUNCTIONS: Record<string, Func> = {
+  lowerCase: (val) => val.toLowerCase(),
+  upperCase: (val) => val.toUpperCase(),
+  length: (val) => val.length,
+  trim: (val) => val.trim(),
+  substring: (val, args) => val.substring(args[0], args[0] + args[1]),
+  first: (val, args) => val.substring(0, args[0]),
+  last: (val, args) => val.substring(val.length - args[0]),
+  position: (val, args) => val.indexOf(args[0]),
+  matches: (val, args) => new RegExp(args[0]).test(val),
+  replace: (val, args) => val.replace(new RegExp(args[0], 'g'), args[1]),
 };
 
 const DATE_FUNCTIONS: Record<string, Func> = {
@@ -41,15 +61,20 @@ const DATE_FUNCTIONS: Record<string, Func> = {
   hour: (val) => getHours(val),
   minute: (val) => getMinutes(val),
   second: (val) => getSeconds(val),
+  // Old ...Diff functions
   dayDiff: (val, args) => differenceInDays(args[0], val),
   weekDiff: (val, args) => differenceInWeeks(args[0], val),
   monthDiff: (val, args) => differenceInMonths(args[0], val),
   yearDiff: (val, args) => differenceInYears(args[0], val),
+  // New difference function
+  difference: (val, args) => differenceInSeconds(args[0], val),
 };
 
+// --- Dispatcher ---
 export const dispatch = (base: any, functionName: string, args: any[]): any => {
-  if (functionName in GENERIC_FUNCTIONS) return GENERIC_FUNCTIONS[functionName](base, args);
+  if (functionName in OBJECT_FUNCTIONS) return OBJECT_FUNCTIONS[functionName](base, args);
   if (typeof base === 'number' && functionName in NUMBER_FUNCTIONS) return NUMBER_FUNCTIONS[functionName](base, args);
+  if (typeof base === 'string' && functionName in STRING_FUNCTIONS) return STRING_FUNCTIONS[functionName](base, args);
   if (base instanceof Date && functionName in DATE_FUNCTIONS) return DATE_FUNCTIONS[functionName](base, args);
   throw new Error(`Function '${functionName}' not found for type ${typeof base}`);
 };

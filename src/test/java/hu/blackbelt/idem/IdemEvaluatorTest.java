@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,21 +22,24 @@ public class IdemEvaluatorTest {
 
     @BeforeAll
     static void setup() {
+        Map<String, Object> selfMap = new HashMap<>();
+        selfMap.put("a", new BigDecimal("1.5"));
+        selfMap.put("b", new BigDecimal("2"));
+        selfMap.put("flag", false);
+        selfMap.put("nested", Map.of("x", new BigDecimal("42")));
+        selfMap.put("arr", List.of(new BigDecimal("10"), new BigDecimal("20"), Map.of("val", new BigDecimal("5"))));
+        selfMap.put("matrix", List.of(
+                List.of(new BigDecimal("1"), new BigDecimal("2")),
+                List.of(new BigDecimal("3"), new BigDecimal("4"))
+        ));
+        selfMap.put("str", "hello");
+        selfMap.put("items", List.of(new BigDecimal("1"), new BigDecimal("2"), new BigDecimal("3")));
+        selfMap.put("startDate", LocalDate.parse("2025-06-15"));
+        selfMap.put("name", "Idem Language");
+        selfMap.put("maybeNull", null); // This is now allowed.
+
         ctx = EvalContext.builder()
-                .self(Map.of(
-                        "a", new BigDecimal("1"),
-                        "b", new BigDecimal("2"),
-                        "flag", false,
-                        "nested", Map.of("x", new BigDecimal("42")),
-                        "arr", List.of(new BigDecimal("10"), new BigDecimal("20"), Map.of("val", new BigDecimal("5"))),
-                        "matrix", List.of(
-                                List.of(new BigDecimal("1"), new BigDecimal("2")),
-                                List.of(new BigDecimal("3"), new BigDecimal("4"))
-                        ),
-                        "str", "hello",
-                        "items", List.of(new BigDecimal("1"), new BigDecimal("2"), new BigDecimal("3")),
-                        "startDate", LocalDate.parse("2025-06-15")
-                ))
+                .self(selfMap)
                 .build();
     }
 
@@ -74,7 +78,7 @@ public class IdemEvaluatorTest {
     @Test
     @DisplayName("resolves simple self properties")
     void testSelfProperties() {
-        assertEquals(new BigDecimal("1"), evaluate("self.a"));
+        assertEquals(new BigDecimal("1.5"), evaluate("self.a"));
         assertEquals(new BigDecimal("42"), evaluate("self.nested.x"));
     }
 
@@ -151,7 +155,7 @@ public class IdemEvaluatorTest {
     @Test
     @DisplayName("evaluates a complex combined expression")
     void testComplexExpression() {
-        String expr = "!(self.a + self.b > 3) && (2 in self.items) ? self.matrix[0][1] : self.nested.x";
+        String expr = "!(self.a + self.b > 4) && (2 in self.items) ? self.matrix[0][1] : self.nested.x";
         // !(1 + 2 > 3) -> !(false) -> true
         // (2 in [1,2,3]) -> true
         // true && true -> true
@@ -160,11 +164,27 @@ public class IdemEvaluatorTest {
     }
 
     @Test
+    @DisplayName("handles string functions")
+    void testStringFunctions() {
+        assertEquals("idem language", evaluate("self.name!lowerCase()"));
+        assertEquals("IDEM LANGUAGE", evaluate("self.name!upperCase()"));
+        assertEquals(new BigDecimal(13), evaluate("self.name!length()"));
+        assertEquals("em L", evaluate("self.name!substring(2, 4)"));
+        assertEquals("Idem", evaluate("self.name!first(4)"));
+        assertEquals("guage", evaluate("self.name!last(5)"));
+        assertEquals(new BigDecimal(5), evaluate("self.name!position('Lang')"));
+        assertEquals(true, evaluate("'abc-123'!matches('[a-z]+-\\d+')"));
+        assertEquals("Idem-Language", evaluate("'Idem Language'!replace(' ', '-')"));
+        assertEquals("abc", evaluate("'  abc  '!trim()"));
+    }
+    
+    @Test
     @DisplayName("handles postfix function calls on numbers")
     void testNumericFunctions() {
         assertEquals(new BigDecimal("1.23"), evaluate("1.2345!round(2)"));
         assertEquals(new BigDecimal("1.23"), evaluate("1.239!floor(2)"));
         assertEquals(new BigDecimal("1.24"), evaluate("1.231!ceil(2)"));
+        assertEquals(new BigDecimal("2"), evaluate("self.a!round()"));
     }
 
     @Test
@@ -174,6 +194,7 @@ public class IdemEvaluatorTest {
         assertEquals(new BigDecimal("10"), evaluate("2023-10-31!monthOfYear()"));
         assertEquals(new BigDecimal("44"), evaluate("2023-10-31!weekOfYear()"));
         assertEquals(new BigDecimal("-10"), evaluate("2024-03-15!dayDiff(2024-03-05)"));
+        assertEquals(new BigDecimal("-172800"), evaluate("2025-06-10!difference(2025-06-08)"));
     }
 
     @Test
@@ -198,6 +219,13 @@ public class IdemEvaluatorTest {
 
         // Date functions on Timestamps
         assertEquals(new BigDecimal("2025"), evaluate("2025-01-01T12:00:00!year()"));
+
+        // Timestamp difference
+        assertEquals(new BigDecimal("7200"), evaluate("2025-06-10T10:00:00!difference(2025-06-10T12:00:00)"));
+
+        // Time difference
+        assertEquals(new BigDecimal("-1800"), evaluate("14:30:00!difference(14:00:00)"));
+
     }
 
     @Test
@@ -227,5 +255,14 @@ public class IdemEvaluatorTest {
     void testStrongTyping() {
         assertThrows(UnsupportedOperationException.class, () -> evaluate("123!year()"));
         assertThrows(UnsupportedOperationException.class, () -> evaluate("'hello'!round(2)"));
+    }
+
+    @Test
+    @DisplayName("handles generic functions")
+    void testGenericFunctions() {
+        assertEquals(true, evaluate("self.a!isDefined()"));
+        assertEquals(false, evaluate("self.maybeNull!isDefined()"));
+        assertEquals(true, evaluate("self.maybeNull!isUndefined()"));
+        assertEquals(false, evaluate("self.a!isUndefined()"));
     }
 }
