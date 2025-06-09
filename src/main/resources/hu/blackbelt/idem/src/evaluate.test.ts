@@ -16,9 +16,18 @@ const ctx = {
     items: [1, 2, 3],
     startDate: new Date('2025-06-15T00:00:00.000Z'),
     maybeNull: null,
+    products: [
+      { productId: 1, productName: 'Chai', unitPrice: 18, discontinued: false },
+      { productId: 2, productName: 'Chang', unitPrice: 19, discontinued: true },
+      { productId: 3, productName: 'Aniseed Syrup', unitPrice: 10, discontinued: false },
+    ],
+    orderDetails: [
+      { orderId: 10248, productId: 11, unitPrice: 14, quantity: 12, discount: 0 },
+      { orderId: 10248, productId: 42, unitPrice: 9.8, quantity: 10, discount: 0 },
+      { orderId: 10249, productId: 72, unitPrice: 34.8, quantity: 5, discount: 0 },
+    ],
   },
 };
-
 const evalExpr = (expr: string) => evaluate(expressionToAst(expr), ctx);
 
 describe('evaluate', () => {
@@ -44,8 +53,7 @@ describe('evaluate', () => {
   // });
 
   it('resolves simple self properties', () => {
-    expect(evaluate(expressionToAst('self.a'), ctx)).toBe(1.5);
-    expect(evaluate(expressionToAst('self.nested.x'), ctx)).toBe(42);
+    expect(evaluate(expressionToAst('self.a'), ctx)).toBe(1.5);    expect(evaluate(expressionToAst('self.nested.x'), ctx)).toBe(42);
   });
 
   it('handles + - * / % ^', () => {
@@ -201,5 +209,69 @@ describe('evaluate', () => {
   it('throws error for function on wrong type', () => {
     expect(() => evalExpr('123!year()')).toThrow();
     expect(() => evalExpr("'hello'!round(2)")).toThrow();
+  });
+
+
+  it('handles array head function', () => {
+    expect(evalExpr('self.items!head(1)')).toEqual([1]);
+  });
+
+  it('handles array tail function', () => {
+    expect(evalExpr('self.items!tail(1)')).toEqual([3]);
+  });
+
+  it('handles array limit function', () => {
+    expect(evalExpr('self.items!limit(2, 1)')).toEqual([2, 3]);
+  });
+
+  it('handles array join function', () => {
+    expect(evalExpr("self.products!join(x | x.productName, ', ')")).toEqual('Chai, Chang, Aniseed Syrup');
+  });
+
+  it('handles array count function', () => {
+    expect(evalExpr('self.products!count()')).toEqual(3);
+  });
+
+  it('handles array sort function', () => {
+    expect(evalExpr('self.products!sort(p | p.unitPrice DESC)')).toEqual([
+      { productId: 2, productName: 'Chang', unitPrice: 19, discontinued: true },
+      { productId: 1, productName: 'Chai', unitPrice: 18, discontinued: false },
+      { productId: 3, productName: 'Aniseed Syrup', unitPrice: 10, discontinued: false },
+    ]);
+  });
+
+  it('handles array filter function', () => {
+    expect(evalExpr('self.orderDetails!filter(od | od.unitPrice < 10)')).toEqual([
+      { orderId: 10248, productId: 42, unitPrice: 9.8, quantity: 10, discount: 0 },
+    ]);
+  });
+
+  it('handles array min function', () => {
+    expect(evalExpr('self.orderDetails!min(od | od.unitPrice)')).toEqual(9.8);
+  });
+
+  it('handles array max function', () => {
+    expect(evalExpr('self.orderDetails!max(p | p.quantity)')).toEqual(12);
+  });
+
+  it('handles array avg function', () => {
+    expect(evalExpr('self.items!avg()')).toEqual(2);
+  });
+
+  it('handles array sum function', () => {
+    expect(evalExpr('self.items!sum()')).toEqual(6);
+  });
+
+
+  it('handles selector', () => {
+    expect(evalExpr("x | x > 1")).toEqual({
+      type: 'Selector',
+      left: 'x',
+      right: {
+        type: 'Gt',
+        left: { type: 'Self', tags: { type: 'Tags', features: ['x'] } },
+        right: { type: 'Number', value: 1 },
+      },
+    });
   });
 });

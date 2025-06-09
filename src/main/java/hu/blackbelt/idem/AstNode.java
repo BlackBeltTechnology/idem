@@ -6,13 +6,12 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
-import java.util.Collection;
 import java.util.List;
 
 @Builder
 @Getter
-@EqualsAndHashCode
 @ToString
+@EqualsAndHashCode
 public class AstNode {
     AstNodeType type;
     Object value;
@@ -21,11 +20,13 @@ public class AstNode {
 
     // Postfix function calls
     String functionName;
+    String sortDirection; // ASC or DESC
 
+    AstNode selector;
+    String delimiter;
     AstNode list;
     AstNode indexes;
     AstNode pointers;
-
     AstNode left;
     AstNode right;
     AstNode expression;

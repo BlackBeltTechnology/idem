@@ -33,16 +33,41 @@ export function evaluate(node: ASTNode, ctx?: EvalContext): any {
       return getFeatureValue(ctx as EvalContext, node.tags.features);
     case 'List':
       return node.elements.map((el: ASTNode) => evaluate(el, ctx));
-    case 'PostfixFunctionCall': {
-      const base = evaluate(node.expr, ctx);
-      const args = node.args.map((arg: ASTNode) => evaluate(arg, ctx));
-      return dispatch(base, node.functionName, args);
+
+    case 'Head':
+      return evaluate(node.expression, ctx)?.slice(0, evaluate(node.amount, ctx));
+
+    case 'Tail':
+      return evaluate(node.expression, ctx)?.slice(-evaluate(node.amount, ctx));
+
+    case 'Limit':
+      return evaluate(node.expression, ctx)?.slice(evaluate(node.offset, ctx), evaluate(node.offset, ctx) + evaluate(node.count, ctx));
+
+    case 'Join': {
+      const baseArray = evaluate(node.expression, ctx);
+      const selector = evaluate(node.selector, ctx);
+      const delimiter = evaluate(node.delimiter, ctx);
+      if (!Array.isArray(baseArray)) {
+        throw new Error("Join can only be called on arrays.");
+      }
+      return baseArray.map((item: any) =>
+          typeof selector === 'function' ? selector(item) : item[selector]
+      ).join(delimiter);
+    }
+    case 'Count':
+      return evaluate(node.expression, ctx)?.length ?? 0;
+    case 'Sort': {
+        const itemsToSort = evaluate(node.expression, ctx);
+        if (!Array.isArray(itemsToSort)) return []; // Handle invalid cases gracefully
+        const selector = typeof node.selector === 'function' ? node.selector : (x: any) => x[node.selector];
+        const compareFn = (a: any, b: any) => (selector(a) > selector(b) ? 1 : -1) * (node.direction === 'DESC' ? -1 : 1);
+        return [...itemsToSort].sort(compareFn);
+
     }
     case 'AddDatePart':
       return handleDatePartArithmetic(evaluate(node.left, ctx), node.datePart, 1);
     case 'SubtractDatePart':
       return handleDatePartArithmetic(evaluate(node.left, ctx), node.datePart, -1);
-
     // --- Operators ---
     case 'Add':
       return evaluate(node.left, ctx) + evaluate(node.right, ctx);
@@ -127,6 +152,16 @@ export function evaluate(node: ASTNode, ctx?: EvalContext): any {
       }
       return current;
     }
+    case 'SelectorExpression':
+        return evaluate(node.selector, ctx);
+    case 'Selector': {
+        const paramName = node.left;
+        const expr = node.right;
+        return (item: any) => {
+          const localCtx = { ...(ctx as any), self: { ...(ctx as any).self, [paramName]: item } };
+          return evaluate(expr, localCtx);
+        };
+      }
     case 'PointerAccess': {
       let base = evaluate(node.expr, ctx);
       for (const p of node.pointers.elements) {
@@ -136,7 +171,7 @@ export function evaluate(node: ASTNode, ctx?: EvalContext): any {
             base = base?.[feat];
           }
         } else if (p.type === 'Index') {
-          const ix = evaluate(p.indexes.elements[0], ctx);
+          const ix = evaluate(p.index, ctx);
           base = base?.[ix];
         }
       }

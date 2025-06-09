@@ -51,15 +51,12 @@ class AIClient(ABC):
     def get_fixed_patch(self, fixer_prompt_messages): pass
 
 class GeminiClient(AIClient):
-    """AI Client for Google's Gemini models."""
+    """AI Client for Google's Gemini models (Patch Workflow)."""
     def __init__(self, api_key, model_name):
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model_name)
         print(f"✅ Initialized Google Gemini Client with model: {model_name}", file=sys.stderr)
-    def get_full_file_rewrite(self, system_prompt, user_prompt):
-        full_prompt = f"{system_prompt}\n\n{user_prompt}"
-        response = self.model.generate_content(full_prompt)
-        return response.text
+    def get_full_file_rewrite(self, system_prompt, user_prompt): raise NotImplementedError("Gemini client uses the patch-based workflow.")
     def stream_patch_generation(self, system_prompt, user_prompt):
         full_prompt = f"{system_prompt}\n\n{user_prompt}"
         safety_settings = [{"category": f"HARM_CATEGORY_{c}", "threshold": "BLOCK_NONE"} for c in ["HARASSMENT", "HATE_SPEECH", "SEXUALLY_EXPLICIT", "DANGEROUS_CONTENT"]]
@@ -71,7 +68,7 @@ class GeminiClient(AIClient):
         return response.text
 
 class ClaudeClient(AIClient):
-    """AI Client for Anthropic's Claude models."""
+    """AI Client for Anthropic's Claude models (Overwrite Workflow)."""
     def __init__(self, api_key, model_name):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model_name = model_name
@@ -89,7 +86,7 @@ class ClaudeClient(AIClient):
         return response.content[0].text
 
 class OpenAIClient(AIClient):
-    """AI Client for OpenAI's models."""
+    """AI Client for OpenAI's models (Overwrite Workflow)."""
     def __init__(self, api_key, model_name):
         self.client = openai.OpenAI(api_key=api_key)
         self.model_name = model_name
@@ -155,22 +152,21 @@ def create_context_prompt(source_files_map):
 # --- Core Application Logic ---
 def _print_debug_output(title, content):
     border = "=" * 25; print(f"\n{border} DEBUG: {title} {border}", file=sys.stderr)
-    print(content, file=sys.stderr); print(f"{'=' * (52 + len(title))}\n", file=sys.stderr)
+    # Don't print the full content if it's too large, just a summary
+    if len(content) > 2000:
+        print(content[:1000] + "\n\n... (content truncated) ...\n\n" + content[-1000:], file=sys.stderr)
+    else:
+        print(content, file=sys.stderr)
+    print(f"{'=' * (52 + len(title))}\n", file=sys.stderr)
 
 def _sanitize_ai_response(response_text: str) -> str:
+    """More robustly removes markdown fences and leading/trailing whitespace."""
     if not response_text: return ""
-    if "```" in response_text:
-        code_start = response_text.find("```")
-        if code_start != -1:
-            response_text = response_text[code_start + 3:]
-            first_newline = response_text.find('\n')
-            if first_newline != -1: response_text = response_text[first_newline + 1:]
-        code_end = response_text.rfind("```")
-        if code_end != -1: response_text = response_text[:code_end]
-    return response_text.strip()
+    # Use simple replacement for robustness against different markdown styles
+    return response_text.replace("```diff", "").replace("```", "").strip()
 
 # --- Overwrite Workflow Functions ---
-def _process_file_overwrite(ai_client, file_path, file_content, system_prompt, user_task_prompt, debug_mode=False, no_backup=False):
+def _process_file_overwrite(ai_client, file_path, file_content, system_prompt, user_task_prompt, debug_mode=False, backup=False):
     print(f"Processing file: {file_path}", file=sys.stderr)
     full_user_prompt = (
         "You will be given the full content of a source file. "
@@ -188,8 +184,7 @@ def _process_file_overwrite(ai_client, file_path, file_content, system_prompt, u
             new_file_content = _sanitize_ai_response(new_file_content_raw)
             if debug_mode: _print_debug_output(f"Sanitized AI Response for {file_path}", new_file_content)
 
-            # NEW: Automatic backup creation (unless disabled)
-            if not no_backup:
+            if backup:
                 backup_path = file_path + ".bak"
                 print(f"   Creating backup: {backup_path}", file=sys.stderr)
                 shutil.copy2(file_path, backup_path)
@@ -259,8 +254,18 @@ def process_stream_and_apply_patches(ai_client, system_prompt, user_prompt, sour
             success_count, failure_count = 0, 0; failed_patches_details = []
             stream = ai_client.stream_patch_generation(system_prompt, user_prompt)
             print("🤝 Stream opened. Processing patches as they arrive...", file=sys.stderr)
+
+            # --- DEBUG MODE: Stream to console and buffer, then process ---
             if debug_mode:
-                full_response_text = "".join(list(stream)); _print_debug_output("Full Raw AI Response", full_response_text)
+                print("\n" + "="*20 + " DEBUG: Raw AI Response Stream " + "="*20, file=sys.stderr)
+                buffered_chunks = []
+                for text_chunk in stream:
+                    sys.stderr.write(text_chunk)
+                    sys.stderr.flush()
+                    buffered_chunks.append(text_chunk)
+                print("\n" + "="*60 + "\n", file=sys.stderr)
+
+                full_response_text = "".join(buffered_chunks)
                 patch_chunks = list(filter(None, full_response_text.split('--- a/')))
                 for chunk in patch_chunks:
                     patch_text = "--- a/" + chunk
@@ -268,10 +273,13 @@ def process_stream_and_apply_patches(ai_client, system_prompt, user_prompt, sour
                         filename = patch_text.splitlines()[0][len('--- a/'):].strip()
                         success, failure_info = _manage_single_patch_application(ai_client, filename, patch_text, source_files_map, debug_mode)
                         if success: success_count += 1
-                        else: failure_count += 1;
-                        if failure_info: failed_patches_details.append(failure_info)
+                        else:
+                            failure_count += 1
+                            if failure_info: failed_patches_details.append(failure_info)
                     except IndexError: failure_count += 1
                 return success_count, failure_count, failed_patches_details
+
+            # --- NORMAL MODE: Process stream line-by-line ---
             else:
                 patch_lines_buffer = []
                 for text_chunk in stream:
@@ -284,8 +292,9 @@ def process_stream_and_apply_patches(ai_client, system_prompt, user_prompt, sour
                                     filename = full_patch_text.splitlines()[0][len('--- a/'):].strip()
                                     success, failure_info = _manage_single_patch_application(ai_client, filename, full_patch_text, source_files_map, debug_mode)
                                     if success: success_count += 1
-                                    else: failure_count += 1;
-                                    if failure_info: failed_patches_details.append(failure_info)
+                                    else:
+                                        failure_count += 1
+                                        if failure_info: failed_patches_details.append(failure_info)
                                 except IndexError: failure_count += 1; print("Error parsing patch chunk, skipping.", file=sys.stderr)
                                 patch_lines_buffer = []
                         patch_lines_buffer.append(line)
@@ -295,10 +304,12 @@ def process_stream_and_apply_patches(ai_client, system_prompt, user_prompt, sour
                         filename = final_patch_text.splitlines()[0][len('--- a/'):].strip()
                         success, failure_info = _manage_single_patch_application(ai_client, filename, final_patch_text, source_files_map, debug_mode)
                         if success: success_count += 1
-                        else: failure_count += 1;
-                        if failure_info: failed_patches_details.append(failure_info)
+                        else:
+                            failure_count += 1
+                            if failure_info: failed_patches_details.append(failure_info)
                     except IndexError: failure_count += 1; print("Error parsing final patch chunk, skipping.", file=sys.stderr)
                 return success_count, failure_count, failed_patches_details
+
         except (anthropic.APIStatusError, google_exceptions.GoogleAPICallError, openai.APIStatusError) as e:
             is_retryable, error_code = False, "N/A"
             if isinstance(e, (anthropic.APIStatusError, openai.APIStatusError)): error_code = e.status_code;
@@ -315,13 +326,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Applies AI-driven code modifications to a project.", formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--model', help="The AI model to use.", choices=MODEL_MAP.keys(), required=True)
-    # NEW: --workflow argument
     parser.add_argument('--workflow', help="The method for applying changes.", choices=['overwrite', 'patch'], default='patch')
     parser.add_argument('--prompt', help="Instruction for the AI. If not provided, reads from stdin.")
     parser.add_argument('--exclude', nargs='*', default=[], help="Glob patterns of files to exclude.")
     parser.add_argument('--debug', action='store_true', help="Enable debug mode to print full prompts and responses.")
-    # NEW: --backup flag
-    parser.add_argument('--backup', action='store_true', help="Automatic backups for the 'overwrite' workflow.")
+    parser.add_argument('--backup', action='store_true', help="Disable automatic backups for the 'overwrite' workflow.")
     args = parser.parse_args()
 
     # --- Initialize AI Client ---
@@ -353,11 +362,10 @@ if __name__ == "__main__":
     if not source_files_map: print("No matching source files found.", file=sys.stderr); sys.exit(0)
 
     # =================================================================================
-    # DUAL-MODE WORKFLOW: Now controlled by the --workflow flag
+    # DUAL-MODE WORKFLOW: Selects workflow based on the --workflow flag
     # =================================================================================
 
     if args.workflow == 'patch':
-        # --- WORKFLOW 1: Multi-file Patch Workflow ---
         print("\n🚀 Starting multi-file patch workflow...", file=sys.stderr)
         system_prompt = (
             "You are an expert programmer. Your response MUST be ONLY a raw `git diff` patch, sent sequentially file by file. "
@@ -388,12 +396,9 @@ if __name__ == "__main__":
             print("\n" + "="*40, file=sys.stderr)
 
     else: # Default workflow is 'overwrite'
-        # --- WORKFLOW 2: One-by-One, Overwrite-Based ---
         workflow_intro = "🚀 Starting one-by-one file overwrite workflow."
-        if args.backup:
-            workflow_intro += " Automatic backups (.bak) are enabled."
-        else:
-            workflow_intro += " WARNING: Automatic backups are disabled."
+        if args.backup: workflow_intro += " Automatic backups (.bak) are enabled."
+        else: workflow_intro += " WARNING: Automatic backups are disabled."
         print(f"\n{workflow_intro}", file=sys.stderr)
 
         system_prompt = (
@@ -401,14 +406,14 @@ if __name__ == "__main__":
             "STRICT RULES:\n1. You MUST return the ENTIRE, full and complete text of the modified file.\n"
             "2. Do NOT omit any code, even the parts that were not changed.\n"
             "3. Your output MUST ONLY be the raw source code for the rewritten file.\n"
-            "4. Do NOT include any explanations, comments, apologies, or markdown code fences like ` ```java ` or ` ``` `.\n"
+            "4. Do NOT include any explanations, comments, apologies, or markdown code fences like ` ```java ` or ` ``` `."
         )
         total_success, total_failed = 0, 0
         file_list = sorted(source_files_map.items())
         for i, (file_path, file_content) in enumerate(file_list):
             print("-" * 40, file=sys.stderr)
             print(f"Processing file {i+1}/{len(file_list)}...", file=sys.stderr)
-            if _process_file_overwrite(ai_client, file_path, file_content, system_prompt, user_prompt, args.debug, args.no_backup): total_success += 1
+            if _process_file_overwrite(ai_client, file_path, file_content, system_prompt, user_prompt, args.debug, args.backup): total_success += 1
             else: total_failed += 1
 
         print("=" * 40, file=sys.stderr); print("--- FINAL SUMMARY ---", file=sys.stderr)

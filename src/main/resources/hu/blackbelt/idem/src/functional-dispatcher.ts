@@ -47,8 +47,8 @@ const STRING_FUNCTIONS: Record<string, Func> = {
   last: (val, args) => val.substring(val.length - args[0]),
   position: (val, args) => val.indexOf(args[0]),
   matches: (val, args) => new RegExp(args[0]).test(val),
-  replace: (val, args) => val.replace(new RegExp(args[0], 'g'), args[1]),
-};
+  replaceAll: (val, args) => val.replace(new RegExp(args[0], 'g'), args[1]),
+}
 
 const DATE_FUNCTIONS: Record<string, Func> = {
   year: (val) => getYear(val),

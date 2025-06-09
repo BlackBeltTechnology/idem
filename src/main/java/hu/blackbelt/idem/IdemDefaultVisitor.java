@@ -8,13 +8,11 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
 
     private static IdemDefaultVisitor INSTANCE = null;
-
     private IdemDefaultVisitor() {
     }
 
@@ -64,7 +62,6 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
                 .build();
     }
 
-    @Override
     public AstNode visitTimeExpression(IdemParser.TimeExpressionContext ctx) {
         String timeText = ctx.getText();
         DateTimeFormatter formatter = timeText.length() > 5 ? DateTimeFormatter.ISO_LOCAL_TIME : DateTimeFormatter.ofPattern("HH:mm");
@@ -112,13 +109,11 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
 
     @Override
     public AstNode visitStringExpression(IdemParser.StringExpressionContext ctx) {
-        var raw = ctx.getText();
         return AstNode.builder()
                 .type(AstNodeType.String)
-                .value(raw.substring(1, raw.length() - 1))
+                .value(ctx.getText().substring(1, ctx.getText().length() - 1))
                 .build();
     }
-
     @Override
     public AstNode visitIndexedAccessExpression(IdemParser.IndexedAccessExpressionContext ctx) {
         return AstNode.builder()

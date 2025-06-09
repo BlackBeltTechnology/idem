@@ -107,6 +107,12 @@ export class Visitor extends IdemVisitor<ASTNode> {
     expr: this.visit(ctx.expression()),
   });
 
+  visitMultiplyExpression = (ctx: MultiplyExpressionContext): ASTNode => ({
+    type: 'Multiply',
+    left: this.visit(ctx.expression(0) as ExpressionContext),
+    right: this.visit(ctx.expression(1) as ExpressionContext),
+  });
+
   visitNotExpression = (ctx: NotExpressionContext): ASTNode => ({
     type: 'Not',
     expr: this.visit(ctx.expression()),
@@ -114,12 +120,6 @@ export class Visitor extends IdemVisitor<ASTNode> {
 
   visitPowerExpression = (ctx: PowerExpressionContext): ASTNode => ({
     type: 'Power',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitMultiplyExpression = (ctx: MultiplyExpressionContext): ASTNode => ({
-    type: 'Multiply',
     left: this.visit(ctx.expression(0) as ExpressionContext),
     right: this.visit(ctx.expression(1) as ExpressionContext),
   });
@@ -148,8 +148,6 @@ export class Visitor extends IdemVisitor<ASTNode> {
     right: this.visit(ctx.expression(1) as ExpressionContext),
   });
 
-
-
   visitAddExpression = (ctx: AddExpressionContext): ASTNode => ({
     type: 'Add',
     left: this.visit(ctx.expression(0) as ExpressionContext),
@@ -164,13 +162,15 @@ export class Visitor extends IdemVisitor<ASTNode> {
 
   visitAddDatePartExpression = (ctx: AddDatePartExpressionContext): ASTNode => ({
     type: 'AddDatePart',
-    left: this.visit(ctx.expression()),
+    left: this.visit(ctx.expression(0) as ExpressionContext),
+    right: this.visit(ctx.expression(1) as ExpressionContext),
     datePart: ctx.DatePart().getText(),
   });
 
   visitSubtractDatePartExpression = (ctx: SubtractDatePartExpressionContext): ASTNode => ({
     type: 'SubtractDatePart',
-    left: this.visit(ctx.expression()),
+    left: this.visit(ctx.expression(0) as ExpressionContext),
+    right: this.visit(ctx.expression(1) as ExpressionContext),
     datePart: ctx.DatePart().getText(),
   });
 

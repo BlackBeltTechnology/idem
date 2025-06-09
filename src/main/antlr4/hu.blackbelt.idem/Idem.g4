@@ -5,7 +5,7 @@ parse
   ;
 
 expression
-  : expression '!' Identifier '(' exprList? ')' #postfixFunctionCallExpression
+  : expression '!' Identifier '(' exprList? ')' pointers? #postfixFunctionCallExpression
   | Self tags                                 #selfExpression
   | Subtract expression                       #unaryMinusExpression
   | Not expression                            #notExpression

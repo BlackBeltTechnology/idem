@@ -36,7 +36,19 @@ public class IdemEvaluatorTest {
         selfMap.put("items", List.of(new BigDecimal("1"), new BigDecimal("2"), new BigDecimal("3")));
         selfMap.put("startDate", LocalDate.parse("2025-06-15"));
         selfMap.put("name", "Idem Language");
-        selfMap.put("maybeNull", null); // This is now allowed.
+        selfMap.put("maybeNull", null);
+
+        selfMap.put("products", List.of(
+                Map.of("productId", 1, "productName", "Chai", "unitPrice", new BigDecimal("18"), "discontinued", false),
+                Map.of("productId", 2, "productName", "Chang", "unitPrice", new BigDecimal("19"), "discontinued", true),
+                Map.of("productId", 3, "productName", "Aniseed Syrup", "unitPrice", new BigDecimal("10"), "discontinued", false)
+        ));
+
+        selfMap.put("orderDetails", List.of(
+                Map.of("orderId", 10248, "productId", 11, "unitPrice", new BigDecimal("14"), "quantity", 12, "discount", 0),
+                Map.of("orderId", 10248, "productId", 42, "unitPrice", new BigDecimal("9.8"), "quantity", 10, "discount", 0),
+                Map.of("orderId", 10249, "productId", 72, "unitPrice", new BigDecimal("34.8"), "quantity", 5, "discount", 0)
+        ));
 
         ctx = EvalContext.builder()
                 .self(selfMap)
@@ -94,6 +106,19 @@ public class IdemEvaluatorTest {
         assertEquals(new BigDecimal("8"), evaluate("2^3"));
     }
 
+    // ADDED: Test for div/mod operators from TypeScript suite
+    @Test
+    @DisplayName("handles div mod operators")
+    void testDivMod() {
+        assertEquals(new BigDecimal("2"), evaluate("5 div 2"));
+        assertEquals(new BigDecimal("2"), evaluate("5 div 2.5"));
+        assertEquals(new BigDecimal("2"), evaluate("5.5 div 2"));
+        assertEquals(new BigDecimal("1"), evaluate("5 mod 2"));
+        assertEquals(new BigDecimal("0"), evaluate("5 mod 2.5"));
+        assertEquals(new BigDecimal("1"), evaluate("5.5 mod 2")); // Assuming 'mod' truncates operands like in the TS test
+    }
+
+
     @Test
     @DisplayName("handles > >= < <= == !=")
     void testComparisons() {
@@ -130,14 +155,14 @@ public class IdemEvaluatorTest {
         assertEquals(true, evaluate("false xor true"));
         assertEquals(false, evaluate("false xor false"));
     }
-    
+
     @Test
     @DisplayName("handles ternary operator")
     void testTernary() {
         assertEquals(new BigDecimal("10"), evaluate("1 > 0 ? 10 : 20"));
         assertEquals(new BigDecimal("20"), evaluate("1 < 0 ? 10 : 20"));
     }
-    
+
     @Test
     @DisplayName("handles in operator")
     void testIn() {
@@ -195,7 +220,7 @@ public class IdemEvaluatorTest {
         assertEquals("Idem-Language", evaluate("'Idem Language'!replace(' ', '-')"));
         assertEquals("abc", evaluate("'  abc  '!trim()"));
     }
-    
+
     @Test
     @DisplayName("handles postfix function calls on numbers")
     void testNumericFunctions() {
@@ -282,5 +307,79 @@ public class IdemEvaluatorTest {
         assertEquals(false, evaluate("self.maybeNull!isDefined()"));
         assertEquals(true, evaluate("self.maybeNull!isUndefined()"));
         assertEquals(false, evaluate("self.a!isUndefined()"));
+    }
+
+    @Test
+    @DisplayName("handles array head function")
+    void testArrayHead() {
+        assertEquals(List.of(new BigDecimal("1")), evaluate("self.items!head(1)"));
+    }
+
+    @Test
+    @DisplayName("handles array tail function")
+    void testArrayTail() {
+        assertEquals(List.of(new BigDecimal("3")), evaluate("self.items!tail(1)"));
+    }
+
+    @Test
+    @DisplayName("handles array limit function")
+    void testArrayLimit() {
+        assertEquals(List.of(new BigDecimal("2"), new BigDecimal("3")), evaluate("self.items!limit(2, 1)"));
+    }
+
+    @Test
+    @DisplayName("handles array join function")
+    void testArrayJoin() {
+        assertEquals("Chai, Chang, Aniseed Syrup", evaluate("self.products!join(x | x.productName, ', ')"));
+    }
+
+    @Test
+    @DisplayName("handles array count function")
+    void testArrayCount() {
+        assertEquals(new BigDecimal("3"), evaluate("self.products!count()"));
+    }
+
+    @Test
+    @DisplayName("handles array sort function")
+    void testArraySort() {
+        List<Map<String, Object>> expected = List.of(
+                Map.of("productId", 2, "productName", "Chang", "unitPrice", new BigDecimal("19"), "discontinued", true),
+                Map.of("productId", 1, "productName", "Chai", "unitPrice", new BigDecimal("18"), "discontinued", false),
+                Map.of("productId", 3, "productName", "Aniseed Syrup", "unitPrice", new BigDecimal("10"), "discontinued", false)
+        );
+        assertEquals(expected, evaluate("self.products!sort(p | p.unitPrice DESC)"));
+    }
+
+    @Test
+    @DisplayName("handles array filter function")
+    void testArrayFilter() {
+        List<Map<String, Object>> expected = List.of(
+                Map.of("orderId", 10248, "productId", 42, "unitPrice", new BigDecimal("9.8"), "quantity", 10, "discount", 0)
+        );
+        assertEquals(expected, evaluate("self.orderDetails!filter(od | od.unitPrice < 10)"));
+    }
+
+    @Test
+    @DisplayName("handles array min function")
+    void testArrayMin() {
+        assertEquals(new BigDecimal("9.8"), evaluate("self.orderDetails!min(od | od.unitPrice)"));
+    }
+
+    @Test
+    @DisplayName("handles array max function")
+    void testArrayMax() {
+        assertEquals(new BigDecimal("12"), evaluate("self.orderDetails!max(p | p.quantity)"));
+    }
+
+    @Test
+    @DisplayName("handles array avg function")
+    void testArrayAvg() {
+        assertEquals(new BigDecimal("2"), evaluate("self.items!avg()"));
+    }
+
+    @Test
+    @DisplayName("handles array sum function")
+    void testArraySum() {
+        assertEquals(new BigDecimal("6"), evaluate("self.items!sum()"));
     }
 }

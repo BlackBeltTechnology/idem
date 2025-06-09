@@ -43,11 +43,8 @@ public enum AstNodeType {
     SubtractDatePart,
     IndexAccess,
     PointerAccess,
-
-    // New Postfix Call
+    FunctionCall,
     PostfixFunctionCall,
-
-    // Internal helper types
     Block,
     ListAccess,
     StringAccess,
