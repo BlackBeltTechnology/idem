@@ -1,11 +1,11 @@
 package hu.blackbelt.idem;
 
-
 import lombok.Builder;
-import lombok.Singular;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.Singular;
 import lombok.ToString;
+
 import java.util.List;
 
 @Builder
@@ -16,28 +16,20 @@ public class AstNode {
 
     AstNodeType type;
     Object value;
-    @Singular
-    List<AstNode> elements;
-    @Singular
-    List<String> features;
-    String direction;  // For array functions: ASC or DESC
-    // Postfix function calls
-    String functionName;
+    String operator;
 
-    AstNode selector;
-    String delimiter;
-    AstNode list;
-    AstNode indexes;
-    AstNode pointers;
-    AstNode left;
-    AstNode right;
-    AstNode expression;
-    // Self navigation
-    AstNode tags;
-    // Date part add / sub
-    String datePart;
-    // Ternary
-    AstNode tCond;
-    AstNode tThen;
-    AstNode tElse;
+    @Singular
+    List<AstNode> children;
+
+    // For identifiers, function names, etc.
+    String name;
+
+    // For iterator arguments (e.g., "p" in "p | p.name")
+    String iteratorVar;
+    AstNode iteratorExpression;
+
+    // For function calls
+    AstNode target;
+    @Singular
+    List<AstNode> arguments;
 }

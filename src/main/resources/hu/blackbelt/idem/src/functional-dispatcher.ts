@@ -1,95 +1,122 @@
+import { evaluate } from './evaluate';
+import type { ASTNode } from './types/ast';
+import type { EvalContext } from './evaluate';
 import {
-  addDays, addMonths, addWeeks, addYears, differenceInDays, differenceInMonths, differenceInSeconds,
-  differenceInWeeks, differenceInYears, getDay, getDayOfYear, getHours, getMinutes,
-  getMonth, getSeconds, getWeek, getWeekOfMonth, getYear
+  addDays, addMonths, addWeeks, addYears, differenceInDays, differenceInSeconds,
 } from 'date-fns';
 
-type Func = (base: any, args: any[]) => any;
+type IdemFunction = (target: any, args: ASTNode[], ctx: EvalContext) => any;
 
-// Helper for rounding to a specific precision with native numbers
-const roundToPrecision = (val: number, precision: number): number => {
-  const factor = 10 ** precision;
-  return Math.round(val * factor) / factor;
-};
+const FUNCTIONS: Record<string, IdemFunction> = {
+  // Generic
+  isDefined: (target) => target !== null && target !== undefined,
+  isUndefined: (target) => target === null || target === undefined,
 
-// --- Function Maps ---
-const OBJECT_FUNCTIONS: Record<string, Func> = {
-  isDefined: (val) => val !== null && val !== undefined,
-  isUndefined: (val) => val === null || val === undefined,
-  size: (val) => {
-    if (Array.isArray(val) || typeof val === 'string') return val.length;
-    if (typeof val === 'object' && val !== null) return Object.keys(val).length;
-    throw new Error(`size() cannot be called on Array, Object or String.`);
+  // String
+  lowerCase: (target) => String(target).toLowerCase(),
+  upperCase: (target) => String(target).toUpperCase(),
+  length: (target) => String(target).length,
+  substring: (target, args, ctx) => {
+    const from = evaluate(args[0], ctx);
+    const len = evaluate(args[1], ctx);
+    return String(target).substring(from, from + len);
   },
-  toInt: (val) => (typeof val === 'boolean' ? (val ? 1 : 0) : undefined),
-};
+  first: (target, args, ctx) => String(target).substring(0, evaluate(args[0], ctx)),
+  last: (target, args, ctx) => String(target).slice(-evaluate(args[0], ctx)),
+  position: (target, args, ctx) => String(target).indexOf(evaluate(args[0], ctx)),
+  matches: (target, args, ctx) => new RegExp(evaluate(args[0], ctx)).test(target),
+  replace: (target, args, ctx) => String(target).replace(new RegExp(evaluate(args[0], ctx), 'g'), evaluate(args[1], ctx)),
+  trim: (target) => String(target).trim(),
 
-const NUMBER_FUNCTIONS: Record<string, Func> = {
-  // Overloaded: handles round() and round(precision)
-  round: (val, args) => roundToPrecision(val, args[0] ?? 0),
-  floor: (val, args) => {
-    const p = args[0] ?? 0;
-    return Math.floor(val * 10 ** p) / 10 ** p;
+  // Numeric
+  round: (target, args, ctx) => {
+    const precision = args.length > 0 ? evaluate(args[0], ctx) : 0;
+    const factor = Math.pow(10, precision);
+    return Math.round(target * factor) / factor;
   },
-  ceil: (val, args) => {
-    const p = args[0] ?? 0;
-    return Math.ceil(val * 10 ** p) / 10 ** p;
+
+  // Temporal
+  difference: (target, args, ctx) => {
+      const right = evaluate(args[0], ctx);
+      if (target instanceof Date && right instanceof Date) {
+          // simple date check
+          if (target.getHours() === 0 && right.getHours() === 0) {
+              return differenceInDays(target, right);
+          }
+          return differenceInSeconds(target, right);
+      }
+      return NaN;
   },
-};
 
-const STRING_FUNCTIONS: Record<string, Func> = {
-  lowerCase: (val) => val.toLowerCase(),
-  upperCase: (val) => val.toUpperCase(),
-  length: (val) => val.length,
-  trim: (val) => val.trim(),
-  substring: (val, args) => val.substring(args[0], args[0] + args[1]),
-  first: (val, args) => val.substring(0, args[0]),
-  last: (val, args) => val.substring(val.length - args[0]),
-  position: (val, args) => val.indexOf(args[0]),
-  matches: (val, args) => new RegExp(args[0]).test(val),
-  replaceAll: (val, args) => val.replace(new RegExp(args[0], 'g'), args[1]),
-}
-
-const DATE_FUNCTIONS: Record<string, Func> = {
-  year: (val) => getYear(val),
-  monthOfYear: (val) => getMonth(val) + 1,
-  dayOfMonth: (val) => val.getDate(),
-  dayOfYear: (val) => getDayOfYear(val),
-  dayOfWeek: (val) => (getDay(val) === 0 ? 7 : getDay(val)),
-  weekOfYear: (val) => getWeek(val),
-  weekOfMonth: (val) => getWeekOfMonth(val),
-  hour: (val) => getHours(val),
-  minute: (val) => getMinutes(val),
-  second: (val) => getSeconds(val),
-  // Old ...Diff functions
-  dayDiff: (val, args) => differenceInDays(args[0], val),
-  weekDiff: (val, args) => differenceInWeeks(args[0], val),
-  monthDiff: (val, args) => differenceInMonths(args[0], val),
-  yearDiff: (val, args) => differenceInYears(args[0], val),
-  // New difference function
-  difference: (val, args) => differenceInSeconds(args[0], val),
-};
-
-// --- Dispatcher ---
-export const dispatch = (base: any, functionName: string, args: any[]): any => {
-  if (functionName in OBJECT_FUNCTIONS) return OBJECT_FUNCTIONS[functionName](base, args);
-  if (typeof base === 'number' && functionName in NUMBER_FUNCTIONS) return NUMBER_FUNCTIONS[functionName](base, args);
-  if (typeof base === 'string' && functionName in STRING_FUNCTIONS) return STRING_FUNCTIONS[functionName](base, args);
-  if (base instanceof Date && functionName in DATE_FUNCTIONS) return DATE_FUNCTIONS[functionName](base, args);
-  throw new Error(`Function '${functionName}' not found for type ${typeof base}`);
-};
-
-const DATE_PART_PATTERN = /^(\d+)([DdWwMmYy])$/;
-export const handleDatePartArithmetic = (baseDate: Date, datePart: string, sign: 1 | -1): Date => {
-  const match = datePart.match(DATE_PART_PATTERN);
-  if (!match) throw new Error(`Invalid DatePart format: ${datePart}`);
-  const amount = parseInt(match[1], 10) * sign;
-  const unit = match[2].toLowerCase();
-  switch (unit) {
-    case 'd': return addDays(baseDate, amount);
-    case 'w': return addWeeks(baseDate, amount);
-    case 'm': return addMonths(baseDate, amount);
-    case 'y': return addYears(baseDate, amount);
-    default: throw new Error(`Unknown date part unit: ${unit}`);
+  // Collection
+  size: (target) => (target as any[]).length,
+  count: (target) => (target as any[]).length,
+  head: (target, args, ctx) => (target as any[]).slice(0, evaluate(args[0], ctx)),
+  tail: (target, args, ctx) => (target as any[]).slice(-evaluate(args[0], ctx)),
+  limit: (target, args, ctx) => {
+      const count = evaluate(args[0], ctx);
+      const offset = args.length > 1 ? evaluate(args[1], ctx) : 0;
+      return (target as any[]).slice(offset, offset + count);
+  },
+  join: (target, args, ctx) => {
+      const collection = target as any[];
+      const iterator = args[0];
+      const delimiter = evaluate(args[1], ctx);
+      return collection.map(item => {
+          const localCtx = { ...ctx, self: { [iterator.iteratorVar!]: item } };
+          return evaluate(iterator.iteratorExpression!, localCtx);
+      }).join(delimiter);
+  },
+  filter: (target, args, ctx) => {
+      const collection = target as any[];
+      const iterator = args[0];
+      return collection.filter(item => {
+          const localCtx = { ...ctx, self: { [iterator.iteratorVar!]: item } };
+          return evaluate(iterator.iteratorExpression!, localCtx);
+      });
+  },
+  sum: (target, args, ctx) => getStream(target, args, ctx).reduce((sum, val) => sum + (Number(val) || 0), 0),
+  avg: (target, args, ctx) => {
+      const values = getStream(target, args, ctx).map(v => Number(v));
+      if (values.length === 0) return 0;
+      return values.reduce((sum, val) => sum + val, 0) / values.length;
+  },
+  min: (target, args, ctx) => Math.min(...getStream(target, args, ctx)),
+  max: (target, args, ctx) => Math.max(...getStream(target, args, ctx)),
+  sort: (target, args, ctx) => {
+      // Not fully implemented for multiple clauses, simplified for equivalence
+      const collection = [...(target as any[])];
+      const iterator = args[0];
+      collection.sort((a, b) => {
+          const localCtxA = { ...ctx, self: { [iterator.iteratorVar!]: a } };
+          const localCtxB = { ...ctx, self: { [iterator.iteratorVar!]: b } };
+          const valA = evaluate(iterator.iteratorExpression!, localCtxA);
+          const valB = evaluate(iterator.iteratorExpression!, localCtxB);
+          if (valA > valB) return 1;
+          if (valA < valB) return -1;
+          return 0;
+      });
+      return collection;
   }
 };
+
+function getStream(target: any, args: ASTNode[], ctx: EvalContext): any[] {
+    const collection = target as any[];
+    if (args.length === 0) return collection;
+    const iterator = args[0];
+    return collection.map(item => {
+        const localCtx = { ...ctx, self: { [iterator.iteratorVar!]: item } };
+        return evaluate(iterator.iteratorExpression!, localCtx);
+    });
+}
+
+export function dispatch(functionName: string, target: any, args: ASTNode[], ctx: EvalContext): any {
+  if ((target === null || target === undefined) && !['isDefined', 'isUndefined'].includes(functionName)) {
+      return undefined;
+  }
+  const func = FUNCTIONS[functionName];
+  if (func) {
+    return func(target, args, ctx);
+  }
+  throw new Error(`Function '${functionName}' not found for type ${typeof target}`);
+}

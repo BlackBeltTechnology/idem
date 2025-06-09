@@ -1,443 +1,259 @@
 package hu.blackbelt.idem;
 
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
 public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
 
-    private static IdemDefaultVisitor INSTANCE = null;
-    private IdemDefaultVisitor() {
-    }
-
-    public static synchronized IdemDefaultVisitor getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new IdemDefaultVisitor();
-        }
-        return INSTANCE;
-    }
-
-    public AstNode visitNode(ParseTree parseTree) {
-        // A null check here provides a more informative error message
-        if (parseTree == null) {
-            throw new IllegalStateException("Attempting to visit a null parse tree node.");
-        }
-        return this.visit(parseTree);
-    }
-
     @Override
     public AstNode visitParse(IdemParser.ParseContext ctx) {
-        return visitNode(ctx.expression());
+        return visit(ctx.expression());
     }
 
     @Override
-    public AstNode visitPostfixFunctionCallExpression(IdemParser.PostfixFunctionCallExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.PostfixFunctionCall)
-                .expression(visitNode(ctx.expression()))
-                .functionName(ctx.Identifier().getText())
-                .elements(ctx.exprList() == null ? Collections.emptyList() : (visitNode(ctx.exprList())).getElements())
-                .build();
-    }
-
-    @Override
-    public AstNode visitLocalDateExpression(IdemParser.LocalDateExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.LocalDate)
-                .value(LocalDate.parse(ctx.getText(), DateTimeFormatter.ISO_LOCAL_DATE))
-                .build();
-    }
-
-    @Override
-    public AstNode visitTimestampExpression(IdemParser.TimestampExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Timestamp)
-                .value(LocalDateTime.parse(ctx.getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-                .build();
-    }
-
-    @Override
-    public AstNode visitTimeExpression(IdemParser.TimeExpressionContext ctx) {
-        String timeText = ctx.getText();
-        DateTimeFormatter formatter = timeText.length() > 5 ? DateTimeFormatter.ISO_LOCAL_TIME : DateTimeFormatter.ofPattern("HH:mm");        return AstNode.builder()
-                .type(AstNodeType.Time)
-                .value(LocalTime.parse(timeText, formatter))
-                .build();
-    }
-
-    @Override
-    public AstNode visitTodayExpression(IdemParser.TodayExpressionContext ctx) {
-        return AstNode.builder().type(AstNodeType.Today).build();
-    }
-
-    @Override
-    public AstNode visitYesterdayExpression(IdemParser.YesterdayExpressionContext ctx) {
-        return AstNode.builder().type(AstNodeType.Yesterday).build();
-    }
-
-    @Override
-    public AstNode visitTomorrowExpression(IdemParser.TomorrowExpressionContext ctx) {
-        return AstNode.builder().type(AstNodeType.Tomorrow).build();
-    }
-
-    @Override
-    public AstNode visitNumberExpression(IdemParser.NumberExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Number)
-                .value(new BigDecimal(ctx.getText()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitBoolExpression(IdemParser.BoolExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Boolean)
-                .value(Boolean.valueOf(ctx.getText()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitListExpression(IdemParser.ListExpressionContext ctx) {
-        return this.visitNode(ctx.list());
-    }
-
-    @Override
-    public AstNode visitStringExpression(IdemParser.StringExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.String)
-                .value(ctx.getText().substring(1, ctx.getText().length() - 1))
-                .build();
-    }
-    @Override
-    public AstNode visitIndexedAccessExpression(IdemParser.IndexedAccessExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.IndexAccess)
-                .expression(this.visitNode(ctx.expression()))
-                .indexes(this.visitNode(ctx.indexes()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitExpressionExpression(IdemParser.ExpressionExpressionContext ctx) {
-        AstNode base = this.visitNode(ctx.expression());
-        if (ctx.pointers() != null) {
-            return AstNode.builder()
-                    .type(AstNodeType.PointerAccess)
-                    .expression(base)
-                    .pointers(this.visitNode(ctx.pointers()))
-                    .build();
-        }
-        return base;
-    }
-
-    @Override
-    public AstNode visitList(IdemParser.ListContext ctx) {
-        if (ctx.exprList() != null) {
-            AstNode exprListNode = this.visitNode(ctx.exprList());
-            return AstNode.builder()
-                    .type(AstNodeType.List)
-                    .elements(exprListNode.getElements())
-                    .build();
-        }
-        return AstNode.builder()
-                .type(AstNodeType.List)
-                .elements(Collections.emptyList())
-                .build();
-    }
-
-    @Override
-    public AstNode visitExprList(IdemParser.ExprListContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.ExprList)
-                .elements(
-                        ctx.expression().stream()
-                                .map(this::visitNode)
-                                .collect(Collectors.toList())
-                )
-                .build();
-    }
-
-    @Override
-    public AstNode visitIndexes(IdemParser.IndexesContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Indexes)
-                .elements(
-                        ctx.expression().stream()
-                                .map(this::visitNode)
-                                .collect(Collectors.toList())
-                )
-                .build();
-    }
-
-    @Override
-    public AstNode visitPointers(IdemParser.PointersContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Pointers)
-                .elements(
-                        ctx.pointer().stream()
-                                .map(this::visitNode)
-                                .collect(Collectors.toList())
-                )
-                .build();
-    }
-
-    @Override
-    public AstNode visitPointer(IdemParser.PointerContext ctx) {
-        if (ctx.tags() != null) {
-            return this.visitNode(ctx.tags());
-        }
-        return AstNode.builder()
-                .type(AstNodeType.Index)
-                .indexes(this.visitNode(ctx.indexes()))
-                .build();
-    }
-
-    @Override
-    public AstNode visitTags(IdemParser.TagsContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Tags)
-                .features(
-                        ctx.feature().stream()
-                                .map(f -> f.Identifier().getText())
-                                .collect(Collectors.toList())
-                )
-                .build();
-    }
-
-    @Override
-    public AstNode visitNullExpression(IdemParser.NullExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Null)
-                .value(null)
-                .build();
+    public AstNode visitParenthesesExpression(IdemParser.ParenthesesExpressionContext ctx) {
+        return visit(ctx.expression());
     }
 
     @Override
     public AstNode visitSelfExpression(IdemParser.SelfExpressionContext ctx) {
+        AstNode self = AstNode.builder().type(AstNodeType.SELF).build();
+        if (ctx.Identifier() != null) {
+            AstNode current = self;
+            for (TerminalNode id : ctx.Identifier()) {
+                current = AstNode.builder()
+                        .type(AstNodeType.NAVIGATION)
+                        .target(current)
+                        .name(id.getText())
+                        .build();
+            }
+            return current;
+        }
+        return self;
+    }
+
+    @Override
+    public AstNode visitNavigationExpression(IdemParser.NavigationExpressionContext ctx) {
         return AstNode.builder()
-                .type(AstNodeType.Self)
-                .tags(this.visitNode(ctx.tags()))
+                .type(AstNodeType.NAVIGATION)
+                .target(visit(ctx.expression()))
+                .name(ctx.Identifier().getText())
                 .build();
     }
 
     @Override
     public AstNode visitUnaryMinusExpression(IdemParser.UnaryMinusExpressionContext ctx) {
         return AstNode.builder()
-                .type(AstNodeType.UnaryMinus)
-                .expression(this.visitNode(ctx.expression()))
+                .type(AstNodeType.UNARY_EXPRESSION)
+                .operator("-")
+                .child(visit(ctx.expression()))
                 .build();
     }
 
     @Override
     public AstNode visitNotExpression(IdemParser.NotExpressionContext ctx) {
         return AstNode.builder()
-                .type(AstNodeType.Not)
-                .expression(this.visitNode(ctx.expression()))
+                .type(AstNodeType.UNARY_EXPRESSION)
+                .operator("not")
+                .child(visit(ctx.expression()))
+                .build();
+    }
+
+    private AstNode buildBinary(IdemParser.ExpressionContext left, ParseTree op, IdemParser.ExpressionContext right) {
+        return AstNode.builder()
+                .type(AstNodeType.BINARY_EXPRESSION)
+                .operator(op.getText())
+                .child(visit(left))
+                .child(visit(right))
                 .build();
     }
 
     @Override
     public AstNode visitPowerExpression(IdemParser.PowerExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Power)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
     }
 
     @Override
-    public AstNode visitMultiplyExpression(IdemParser.MultiplyExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Multiply)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
+    public AstNode visitMultiplyDivideModExpression(IdemParser.MultiplyDivideModExpressionContext ctx) {
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
     }
 
     @Override
-    public AstNode visitDivideExpression(IdemParser.DivideExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Divide)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
+    public AstNode visitAddSubtractExpression(IdemParser.AddSubtractExpressionContext ctx) {
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
     }
 
     @Override
-    public AstNode visitModulusExpression(IdemParser.ModulusExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Modulus)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
+    public AstNode visitComparisonExpression(IdemParser.ComparisonExpressionContext ctx) {
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
     }
 
     @Override
-    public AstNode visitDivExpression(IdemParser.DivExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Div)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitModExpression(IdemParser.ModExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Mod)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitAddExpression(IdemParser.AddExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Add)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitSubtractExpression(IdemParser.SubtractExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Subtract)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitAddDatePartExpression(IdemParser.AddDatePartExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.AddDatePart)
-                .left(this.visitNode(ctx.expression()))
-                .datePart(ctx.DatePart().getText())
-                .build();
-    }
-
-    @Override
-    public AstNode visitSubtractDatePartExpression(IdemParser.SubtractDatePartExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.SubtractDatePart)
-                .left(this.visitNode(ctx.expression()))
-                .datePart(ctx.DatePart().getText())
-                .build();
-    }
-
-    @Override
-    public AstNode visitGtEqExpression(IdemParser.GtEqExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Gte)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitLtEqExpression(IdemParser.LtEqExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Lte)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitGtExpression(IdemParser.GtExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Gt)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitLtExpression(IdemParser.LtExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Lt)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitEqExpression(IdemParser.EqExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Eq)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitNotEqExpression(IdemParser.NotEqExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.NotEq)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
+    public AstNode visitEqualityExpression(IdemParser.EqualityExpressionContext ctx) {
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
     }
 
     @Override
     public AstNode visitAndExpression(IdemParser.AndExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.And)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
-    }
-
-    @Override
-    public AstNode visitOrExpression(IdemParser.OrExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Or)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
     }
 
     @Override
     public AstNode visitXorExpression(IdemParser.XorExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.Xor)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
-                .build();
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+    }
+
+    @Override
+    public AstNode visitOrExpression(IdemParser.OrExpressionContext ctx) {
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+    }
+
+    @Override
+    public AstNode visitImpliesExpression(IdemParser.ImpliesExpressionContext ctx) {
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
     }
 
     @Override
     public AstNode visitTernaryExpression(IdemParser.TernaryExpressionContext ctx) {
         return AstNode.builder()
-                .type(AstNodeType.Ternary)
-                .tCond(this.visitNode(ctx.expression(0)))
-                .tThen(this.visitNode(ctx.expression(1)))
-                .tElse(this.visitNode(ctx.expression(2)))
+                .type(AstNodeType.TERNARY_EXPRESSION)
+                .child(visit(ctx.expression(0))) // condition
+                .child(visit(ctx.expression(1))) // then
+                .child(visit(ctx.expression(2))) // else
                 .build();
     }
 
     @Override
     public AstNode visitInExpression(IdemParser.InExpressionContext ctx) {
         return AstNode.builder()
-                .type(AstNodeType.In)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
+                .type(AstNodeType.IN_EXPRESSION)
+                .child(visit(ctx.expression(0)))
+                .child(visit(ctx.expression(1)))
                 .build();
     }
 
     @Override
-    public AstNode visitImpliesExpression(IdemParser.ImpliesExpressionContext ctx) {
+    public AstNode visitFunctionCallExpression(IdemParser.FunctionCallExpressionContext ctx) {
         return AstNode.builder()
-                .type(AstNodeType.Implies)
-                .left(this.visitNode(ctx.expression(0)))
-                .right(this.visitNode(ctx.expression(1)))
+                .type(AstNodeType.FUNCTION_CALL)
+                .target(visit(ctx.expression()))
+                .name(ctx.Identifier().getText())
+                .arguments(ctx.argumentList() != null ? visit(ctx.argumentList()).getChildren() : Collections.emptyList())
                 .build();
+    }
+
+    @Override
+    public AstNode visitArgumentList(IdemParser.ArgumentListContext ctx) {
+        if (ctx.iteratorArgument() != null) {
+            AstNode.AstNodeBuilder builder = AstNode.builder();
+            builder.child(visit(ctx.iteratorArgument()));
+            if (ctx.expression() != null) {
+                ctx.expression().forEach(expr -> builder.child(visit(expr)));
+            }
+            return builder.build();
+        }
+        return AstNode.builder()
+                .children(ctx.expression().stream().map(this::visit).collect(Collectors.toList()))
+                .build();
+    }
+
+    @Override
+    public AstNode visitIteratorArgument(IdemParser.IteratorArgumentContext ctx) {
+        return AstNode.builder()
+                .type(AstNodeType.ITERATOR_ARGUMENT)
+                .iteratorVar(ctx.Identifier().getText())
+                .iteratorExpression(visit(ctx.expression()))
+                .build();
+    }
+
+    @Override
+    public AstNode visitIndexAccessExpression(IdemParser.IndexAccessExpressionContext ctx) {
+        return AstNode.builder()
+                .type(AstNodeType.INDEX_ACCESS)
+                .child(visit(ctx.expression(0))) // target
+                .child(visit(ctx.expression(1))) // index
+                .build();
+    }
+
+    // Literals
+    @Override
+    public AstNode visitLiteralExpression(IdemParser.LiteralExpressionContext ctx) {
+        return visit(ctx.literal());
+    }
+
+    @Override
+    public AstNode visitIdentifierExpression(IdemParser.IdentifierExpressionContext ctx) {
+        return AstNode.builder().type(AstNodeType.IDENTIFIER).name(ctx.getText()).build();
+    }
+
+    @Override
+    public AstNode visitNumericLiteral(IdemParser.NumericLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.NUMBER).value(new BigDecimal(ctx.getText())).build();
+    }
+
+    @Override
+    public AstNode visitStringLiteral(IdemParser.StringLiteralContext ctx) {
+        String text = ctx.getText();
+        return AstNode.builder().type(AstNodeType.STRING).value(text.substring(1, text.length() - 1)).build();
+    }
+
+    @Override
+    public AstNode visitBooleanLiteral(IdemParser.BooleanLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.BOOLEAN).value(Boolean.parseBoolean(ctx.getText())).build();
+    }
+
+    @Override
+    public AstNode visitNullLiteral(IdemParser.NullLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.NULL).build();
+    }
+
+    @Override
+    public AstNode visitDateLiteral(IdemParser.DateLiteralContext ctx) {
+        String dateText = ctx.DATE().getText();
+        return AstNode.builder().type(AstNodeType.DATE).value(LocalDate.parse(dateText)).build();
+    }
+
+    @Override
+    public AstNode visitTimestampLiteral(IdemParser.TimestampLiteralContext ctx) {
+        String tsText = ctx.TIMESTAMP().getText();
+        if (tsText.endsWith("Z")) {
+            tsText = tsText.substring(0, tsText.length() - 1);
+        }
+        try {
+            return AstNode.builder().type(AstNodeType.TIMESTAMP).value(LocalDateTime.parse(tsText, DateTimeFormatter.ISO_LOCAL_DATE_TIME)).build();
+        } catch (DateTimeParseException e) {
+            return AstNode.builder().type(AstNodeType.TIMESTAMP).value(LocalDateTime.parse(tsText, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))).build();
+        }
+    }
+
+    @Override
+    public AstNode visitTimeLiteral(IdemParser.TimeLiteralContext ctx) {
+        String timeText = ctx.TIME().getText();
+        DateTimeFormatter formatter = timeText.length() > 5 ? DateTimeFormatter.ISO_LOCAL_TIME : DateTimeFormatter.ofPattern("HH:mm");
+        return AstNode.builder().type(AstNodeType.TIME).value(LocalTime.parse(timeText, formatter)).build();
+    }
+
+    @Override
+    public AstNode visitTodayLiteral(IdemParser.TodayLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.TODAY).build();
+    }
+
+    @Override
+    public AstNode visitYesterdayLiteral(IdemParser.YesterdayLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.YESTERDAY).build();
+    }
+
+    @Override
+    public AstNode visitTomorrowLiteral(IdemParser.TomorrowLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.TOMORROW).build();
     }
 }

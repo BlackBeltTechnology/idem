@@ -5,206 +5,167 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.WeekFields;
-import java.util.*;
-import java.util.function.BiFunction;
-import java.util.regex.Pattern;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static java.util.Map.entry;
+import static hu.blackbelt.idem.IdemEvaluator.compare;
+import static hu.blackbelt.idem.IdemEvaluator.evaluate;
+import static hu.blackbelt.idem.IdemEvaluator.toBoolean;
+
 public class FunctionDispatcher {
-    // --- FUNCTION MAPS ---
 
-    private static final Map<String, BiFunction<Object, List<Object>, Object>> OBJECT_FUNCTIONS = Map.ofEntries(
-            entry("isDefined", (val, args) -> val != null),
-            entry("isUndefined", (val, args) -> val == null),
-            entry("size", (val, args) -> {
-                if (val instanceof Collection) return new BigDecimal(((Collection<?>) val).size());
-                if (val instanceof Map) return new BigDecimal(((Map<?, ?>) val).size());
-                if (val instanceof String) return new BigDecimal(((String) val).length());
-                throw new IllegalArgumentException("size() can only be called on Collection, Map or String.");
+    @FunctionalInterface
+    interface IdemFunction {
+        Object apply(Object target, List<AstNode> args, EvalContext ctx);
+    }
+
+    private static final Map<String, IdemFunction> FUNCTIONS = Map.ofEntries(
+            // Generic Functions
+            Map.entry("isDefined", (target, args, ctx) -> target != null),
+            Map.entry("isUndefined", (target, args, ctx) -> target == null),
+
+            // String Functions
+            Map.entry("lowerCase", (target, args, ctx) -> ((String) target).toLowerCase()),
+            Map.entry("upperCase", (target, args, ctx) -> ((String) target).toUpperCase()),
+            Map.entry("length", (target, args, ctx) -> new BigDecimal(((String) target).length())),
+            Map.entry("substring", (target, args, ctx) -> {
+                int startIndex = IdemEvaluator.toBigDecimal(evaluate(args.get(0), ctx)).intValue();
+                int length = IdemEvaluator.toBigDecimal(evaluate(args.get(1), ctx)).intValue();
+                return ((String) target).substring(startIndex, startIndex + length);
             }),
-            entry("join", (val, args) -> {
-                if (!(val instanceof Collection)) {
-                    throw new IllegalArgumentException("join() can only be called on Collection.");
-                }
-                String separator = args.isEmpty() ? "," : (String) args.get(0);
-                return ((Collection<?>) val).stream()
-                        .map(Object::toString)
-                        .collect(Collectors.joining(separator));
+            Map.entry("first", (target, args, ctx) -> {
+                int n = IdemEvaluator.toBigDecimal(evaluate(args.get(0), ctx)).intValue();
+                return ((String) target).substring(0, n);
             }),
-            entry("toInt", (val, args) -> {
-                if (val instanceof Boolean) return (Boolean) val ? BigDecimal.ONE : BigDecimal.ZERO;
-                throw new IllegalArgumentException("Cannot convert " + val.getClass().getSimpleName() + " to int");
+            Map.entry("last", (target, args, ctx) -> {
+                int n = IdemEvaluator.toBigDecimal(evaluate(args.get(0), ctx)).intValue();
+                String str = (String) target;
+                return str.substring(str.length() - n);
+            }),
+            Map.entry("position", (target, args, ctx) -> new BigDecimal(((String) target).indexOf((String)evaluate(args.get(0), ctx)))),
+            Map.entry("matches", (target, args, ctx) -> ((String) target).matches((String)evaluate(args.get(0), ctx))),
+            Map.entry("replace", (target, args, ctx) -> ((String) target).replaceAll((String)evaluate(args.get(0), ctx), (String)evaluate(args.get(1), ctx))),
+            Map.entry("trim", (target, args, ctx) -> ((String) target).trim()),
+
+            // Numeric Functions
+            Map.entry("round", (target, args, ctx) -> {
+                int precision = args.isEmpty() ? 0 : IdemEvaluator.toBigDecimal(evaluate(args.get(0), ctx)).intValue();
+                return IdemEvaluator.toBigDecimal(target).setScale(precision, RoundingMode.HALF_UP);
+            }),
+
+            // Temporal Functions
+            Map.entry("difference", (target, args, ctx) -> {
+                Object right = evaluate(args.get(0), ctx);
+                if (target instanceof LocalDate) return new BigDecimal(ChronoUnit.DAYS.between((LocalDate) right, (LocalDate) target));
+                if (target instanceof LocalDateTime) return new BigDecimal(ChronoUnit.SECONDS.between((LocalDateTime) right, (LocalDateTime) target));
+                if (target instanceof LocalTime) return new BigDecimal(ChronoUnit.SECONDS.between((LocalTime) right, (LocalTime) target));
+                throw new IllegalArgumentException("difference() not supported for this type");
+            }),
+
+            // Collection Functions
+            Map.entry("size", (target, args, ctx) -> new BigDecimal(((Collection<?>) target).size())),
+            Map.entry("count", (target, args, ctx) -> new BigDecimal(((Collection<?>) target).size())),
+            Map.entry("head", (target, args, ctx) -> {
+                long n = IdemEvaluator.toBigDecimal(evaluate(args.get(0), ctx)).longValue();
+                return ((Collection<?>) target).stream().limit(n).collect(Collectors.toList());
+            }),
+            Map.entry("tail", (target, args, ctx) -> {
+                long n = IdemEvaluator.toBigDecimal(evaluate(args.get(0), ctx)).longValue();
+                Collection<?> collection = (Collection<?>) target;
+                return collection.stream().skip(Math.max(0, collection.size() - n)).collect(Collectors.toList());
+            }),
+            Map.entry("limit", (target, args, ctx) -> {
+                long count = IdemEvaluator.toBigDecimal(evaluate(args.get(0), ctx)).longValue();
+                long offset = args.size() > 1 ? IdemEvaluator.toBigDecimal(evaluate(args.get(1), ctx)).longValue() : 0;
+                return ((Collection<?>) target).stream().skip(offset).limit(count).collect(Collectors.toList());
+            }),
+            Map.entry("filter", (target, args, ctx) -> {
+                AstNode iterator = args.get(0);
+                return ((Collection<?>) target).stream()
+                        .filter(item -> {
+                            EvalContext itemCtx = ctx.withSelf(Map.of(iterator.getIteratorVar(), item));
+                            return toBoolean(evaluate(iterator.getIteratorExpression(), itemCtx));
+                        })
+                        .collect(Collectors.toList());
+            }),
+            Map.entry("join", (target, args, ctx) -> {
+                AstNode iterator = args.get(0);
+                String delimiter = (String) evaluate(args.get(1), ctx);
+                return ((Collection<?>) target).stream()
+                        .map(item -> {
+                            EvalContext itemCtx = ctx.withSelf(Map.of(iterator.getIteratorVar(), item));
+                            return Objects.toString(evaluate(iterator.getIteratorExpression(), itemCtx));
+                        })
+                        .collect(Collectors.joining(delimiter));
+            }),
+            Map.entry("sum", (target, args, ctx) -> getStream(target, args, ctx)
+                    .map(IdemEvaluator::toBigDecimal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add)),
+            Map.entry("avg", (target, args, ctx) -> {
+                List<BigDecimal> numbers = getStream(target, args, ctx)
+                        .map(IdemEvaluator::toBigDecimal).collect(Collectors.toList());
+                if (numbers.isEmpty()) return BigDecimal.ZERO;
+                BigDecimal sum = numbers.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+                return sum.divide(new BigDecimal(numbers.size()), 10, RoundingMode.HALF_UP);
+            }),
+            Map.entry("min", (target, args, ctx) -> getStream(target, args, ctx)
+                    .min(IdemEvaluator::compare)
+                    .orElse(null)),
+            Map.entry("max", (target, args, ctx) -> getStream(target, args, ctx)
+                    .max(IdemEvaluator::compare)
+                    .orElse(null)),
+            Map.entry("sort", (target, args, ctx) -> {
+                List<?> list = new java.util.ArrayList<>((Collection<?>) target);
+                Comparator<Object> comparator = (o1, o2) -> {
+                    int result = 0;
+                    for (AstNode sortClause : args) {
+                        if (result == 0) {
+                            EvalContext ctx1 = ctx.withSelf(Map.of(sortClause.getIteratorVar(), o1));
+                            EvalContext ctx2 = ctx.withSelf(Map.of(sortClause.getIteratorVar(), o2));
+
+                            Object val1 = evaluate(sortClause.getIteratorExpression(), ctx1);
+                            Object val2 = evaluate(sortClause.getIteratorExpression(), ctx2);
+                            result = compare(val1, val2);
+
+                            if (sortClause.getValue() != null && "DESC".equalsIgnoreCase(sortClause.getValue().toString())) {
+                                result = -result;
+                            }
+                        }
+                    }
+                    return result;
+                };
+                list.sort(comparator);
+                return list;
             })
     );
 
-    private static final Map<String, BiFunction<BigDecimal, List<Object>, Object>> NUMBER_FUNCTIONS = Map.of(
-            // Overloaded: handles round() and round(precision)
-            "round", (val, args) -> {
-                int precision = args.isEmpty() ? 0 : ((BigDecimal) args.get(0)).intValue();
-                return val.setScale(precision, RoundingMode.HALF_UP);
-            },
-            "floor", (val, args) -> {
-                int precision = args.isEmpty() ? 0 : ((BigDecimal) args.get(0)).intValue();
-                return val.setScale(precision, RoundingMode.FLOOR);
-            },
-            "ceil", (val, args) -> {
-                int precision = args.isEmpty() ? 0 : ((BigDecimal) args.get(0)).intValue();
-                return val.setScale(precision, RoundingMode.CEILING);
-            }
-    );
-
-    private static final Map<String, BiFunction<String, List<Object>, Object>> STRING_FUNCTIONS = Map.ofEntries(
-            entry("lowerCase", (val, args) -> val.toLowerCase()),
-            entry("upperCase", (val, args) -> val.toUpperCase()),
-            entry("length", (val, args) -> new BigDecimal(val.length())),
-            entry("trim", (val, args) -> val.trim()),
-            entry("substring", (val, args) -> {
-                int startIndex = ((BigDecimal) args.get(0)).intValue();
-                int length = ((BigDecimal) args.get(1)).intValue();
-                return val.substring(startIndex, startIndex + length);
-            }),
-            entry("first", (val, args) -> val.substring(0, ((BigDecimal) args.get(0)).intValue())),
-            entry("last", (val, args) -> val.substring(val.length() - ((BigDecimal) args.get(0)).intValue())),
-            entry("position", (val, args) -> new BigDecimal(val.indexOf((String) args.get(0)))),
-            entry("matches", (val, args) -> val.matches((String) args.get(0))),
-            entry("replace", (val, args) -> val.replaceAll((String) args.get(0), (String) args.get(1)))
-    );
-
-    private static final Map<String, BiFunction<LocalDate, List<Object>, Object>> DATE_FUNCTIONS = Map.ofEntries(
-            entry("year", (val, args) -> new BigDecimal(val.getYear())),
-            entry("monthOfYear", (val, args) -> new BigDecimal(val.getMonthValue())),
-            entry("dayOfMonth", (val, args) -> new BigDecimal(val.getDayOfMonth())),
-            entry("dayOfYear", (val, args) -> new BigDecimal(val.getDayOfYear())),
-            entry("dayOfWeek", (val, args) -> new BigDecimal(val.getDayOfWeek().getValue())),
-            entry("weekOfYear", (val, args) -> new BigDecimal(val.get(WeekFields.ISO.weekOfYear()))),
-            entry("weekOfMonth", (val, args) -> new BigDecimal(val.get(WeekFields.ISO.weekOfMonth()))),
-            entry("dayDiff", (val, args) -> new BigDecimal(ChronoUnit.DAYS.between(val, (LocalDate) args.get(0)))),
-            entry("weekDiff", (val, args) -> new BigDecimal(ChronoUnit.WEEKS.between(val, (LocalDate) args.get(0)))),
-            entry("monthDiff", (val, args) -> new BigDecimal(ChronoUnit.MONTHS.between(val, (LocalDate) args.get(0)))),
-            entry("yearDiff", (val, args) -> new BigDecimal(ChronoUnit.YEARS.between(val, (LocalDate) args.get(0)))),
-            entry("difference", (val, args) -> new BigDecimal(ChronoUnit.SECONDS.between(
-                    val.atStartOfDay(ZoneId.systemDefault()),
-                    ((LocalDate) args.get(0)).atStartOfDay(ZoneId.systemDefault())
-            )))
-    );
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static final Map<String, BiFunction<Collection, List<Object>, Object>> COLLECTION_FUNCTIONS = Map.ofEntries(
-            entry("head", (c, args) -> c.stream().limit(toBigDecimal(args.get(0)).longValue()).collect(Collectors.toList())),
-            entry("tail", (c, args) -> c.stream().skip(Math.max(0, c.size() - toBigDecimal(args.get(0)).longValue())).collect(Collectors.toList())),
-            entry("limit", (c, args) -> c.stream().skip(toBigDecimal(args.get(0)).longValue()).limit(toBigDecimal(args.get(1)).longValue()).collect(Collectors.toList())),
-            entry("count", (c, args) -> new BigDecimal(c.size())),
-            entry("join", (c, args) -> c.stream().map(Object::toString).collect(Collectors.joining(args.isEmpty() ? "," : (String)args.get(0)))),
-            entry("sum", (c, args) -> c.stream()
-                    .map(item -> getProperty(item, args))
-                    .map(FunctionDispatcher::toBigDecimal)
-            .reduce(BigDecimal.ZERO, BigDecimal::add)),
-        entry("avg", (c, args) -> {
-            if (c.isEmpty()) return BigDecimal.ZERO;
-
-        BigDecimal sum = (BigDecimal) COLLECTION_FUNCTIONS.get("sum").apply(c, args);
-        return sum.divide(new BigDecimal(c.size()), 10, RoundingMode.HALF_UP);
-        }),
-            entry("min", (c, args) -> c.stream()
-            .map(item -> getProperty(item, args))
-            .min(FunctionDispatcher::compare)
-            .orElse(null)
-        ),
-        entry("max", (c, args) -> c.stream()
-            .map(item -> getProperty(item, args))
-            .max(FunctionDispatcher::compare)
-            .orElse(null)
-        ),
-        entry("filter", (c, args) -> {
-        String key = (String) args.get(0);
-        Object expected = args.get(1);
-        return c.stream()
-                .filter(item -> compare(getProperty(item, Collections.singletonList(key)), expected) == 0)
-                .collect(Collectors.toList());
-        }),
-            entry("sort", (c, args) -> {
-        Comparator<Object> comparator = Comparator.comparing(
-                item -> (Comparable) getProperty(item, args.subList(0, 1))
-                        );
-        if (args.size() > 1 && "DESC".equalsIgnoreCase((String)args.get(1))) {
-            comparator = comparator.reversed();
-            }
-        return c.stream().sorted(comparator).collect(Collectors.toList());
-        })
-            );
-+
-        private static Object getProperty(Object item, List<Object> args) {
-        if (args.isEmpty() || !(args.get(0) instanceof String)) {
-            return item; // No property specified, operate on the item itself
-            }
-        if (item instanceof Map) {
-            return ((Map<?, ?>) item).get((String) args.get(0));
-            }
-        // Could add reflection for POJOs here if needed
-        throw new IllegalArgumentException("Cannot extract property from " + item.getClass().getSimpleName());
+    private static Stream<?> getStream(Object target, List<AstNode> args, EvalContext ctx) {
+        Collection<?> collection = (Collection<?>) target;
+        if (args.isEmpty()) {
+            return collection.stream();
         }
-+
-        private static BigDecimal toBigDecimal(Object value) {
-        if (value instanceof BigDecimal) return (BigDecimal) value;
-        if (value instanceof Number) return new BigDecimal(value.toString());
-        throw new ClassCastException("Cannot cast " + value.getClass().getName() + " to BigDecimal.");
-        }
-+
-        @SuppressWarnings({"unchecked", "rawtypes"})
-private static int compare(Object left, Object right) {
-        if (left == null || right == null) return left == right ? 0 : -1;
-        if (left instanceof Number && right instanceof Number) {
-            return toBigDecimal(left).compareTo(toBigDecimal(right));
-            }
-        if (left instanceof Comparable && left.getClass().isInstance(right)) {
-            return ((Comparable) left).compareTo(right);
-            }
-        return Objects.equals(left, right) ? 0 : -1;
-        }
-+
-    private static final Map<String, BiFunction<LocalDateTime, List<Object>, Object>> TIMESTAMP_FUNCTIONS = Map.ofEntries(
-            entry("hour", (val, args) -> new BigDecimal(val.getHour())),
-            entry("minute", (val, args) -> new BigDecimal(val.getMinute())),
-            entry("second", (val, args) -> new BigDecimal(val.getSecond())),
-            entry("difference", (val, args) -> new BigDecimal(ChronoUnit.SECONDS.between(
-                    val.atZone(ZoneId.systemDefault()),
-                    ((LocalDateTime) args.get(0)).atZone(ZoneId.systemDefault())
-            )))
-    );
-
-    private static final Map<String, BiFunction<LocalTime, List<Object>, Object>> TIME_FUNCTIONS = Map.ofEntries(
-            entry("hour", (val, args) -> new BigDecimal(val.getHour())),
-            entry("minute", (val, args) -> new BigDecimal(val.getMinute())),
-            entry("second", (val, args) -> new BigDecimal(val.getSecond())),
-            entry("difference", (val, args) -> new BigDecimal(ChronoUnit.SECONDS.between(val, (LocalTime) args.get(0))))
-    );
-
-    public static Object dispatch(Object base, String functionName, List<Object> args) {
-        if (OBJECT_FUNCTIONS.containsKey(functionName)) {
-            return OBJECT_FUNCTIONS.get(functionName).apply(base, args);
-        }
-        if (base instanceof BigDecimal && NUMBER_FUNCTIONS.containsKey(functionName)) {
-            return NUMBER_FUNCTIONS.get(functionName).apply((BigDecimal) base, args);
-        }
-        if (base instanceof String && STRING_FUNCTIONS.containsKey(functionName)) {
-            return STRING_FUNCTIONS.get(functionName).apply((String) base, args);
-        }
-        if (base instanceof LocalDate && DATE_FUNCTIONS.containsKey(functionName)) {
-            return DATE_FUNCTIONS.get(functionName).apply((LocalDate) base, args);
-        }
-        if (base instanceof LocalDateTime) {
-            if (TIMESTAMP_FUNCTIONS.containsKey(functionName))
-                return TIMESTAMP_FUNCTIONS.get(functionName).apply((LocalDateTime) base, args);
-            if (DATE_FUNCTIONS.containsKey(functionName))
-                return DATE_FUNCTIONS.get(functionName).apply(((LocalDateTime) base).toLocalDate(), args);
-        }
-        if (base instanceof LocalTime && TIME_FUNCTIONS.containsKey(functionName)) {
-            return TIME_FUNCTIONS.get(functionName).apply((LocalTime) base, args);
-        }
-        throw new UnsupportedOperationException("Function '" + functionName + "' not found for type " + base.getClass().getSimpleName());
+        AstNode iterator = args.get(0);
+        return collection.stream().map(item -> {
+            EvalContext itemCtx = ctx.withSelf(Map.of(iterator.getIteratorVar(), item));
+            return evaluate(iterator.getIteratorExpression(), itemCtx);
+        });
     }
+
+    public static Object dispatch(String functionName, Object target, List<AstNode> args, EvalContext ctx) {
+        if (target == null && !Set.of("isDefined", "isUndefined").contains(functionName)) {
+            return null;
+        }
+        if (FUNCTIONS.containsKey(functionName)) {
+            return FUNCTIONS.get(functionName).apply(target, args, ctx);
+        }
+        throw new UnsupportedOperationException("Function '" + functionName + "' is not defined.");
+    }
+
 }

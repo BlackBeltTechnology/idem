@@ -1,370 +1,153 @@
-import type {
-  AddDatePartExpressionContext,
-  AddExpressionContext,
-  XorExpressionContext,
+import {
   AndExpressionContext,
-  BoolExpressionContext,
-  DivideExpressionContext,
-  DivExpressionContext,
-  EqExpressionContext,
-  ExprListContext,
+  ArgumentListContext,
+  ComparisonExpressionContext,
+  EqualityExpressionContext,
   ExpressionContext,
-  ExpressionExpressionContext,
-  FilterExpressionContext,
-  GtEqExpressionContext,
-  GtExpressionContext,
-  InExpressionContext,
+  FunctionCallExpressionContext,
+  IdentifierExpressionContext,
   ImpliesExpressionContext,
-  IndexesContext,
-  IndexedAccessExpressionContext,
-  ListContext,
-  ListExpressionContext,
-  LocalDateExpressionContext,
-  LtEqExpressionContext,
-  LtExpressionContext,
-  MinExpressionContext,
-  ModulusExpressionContext,
-  MultiplyExpressionContext,
-  ModExpressionContext,
-  NotEqExpressionContext,
+  InExpressionContext,
+  IndexAccessExpressionContext,
+  IteratorArgumentContext,
+  LiteralContext,
+  LiteralExpressionContext,
+  NavigationExpressionContext,
   NotExpressionContext,
-  NullExpressionContext,
-  NumberExpressionContext,
   OrExpressionContext,
+  ParenthesesExpressionContext,
   ParseContext,
-  PointerContext,
-  PointersContext,
-  PostfixFunctionCallExpressionContext,
   PowerExpressionContext,
   SelfExpressionContext,
-  StringExpressionContext,
-  SubtractDatePartExpressionContext,
-  SubtractExpressionContext,
-  TagsContext,
   TernaryExpressionContext,
-  TimeExpressionContext,
-  TimestampExpressionContext,
-  TodayExpressionContext,
-  TomorrowExpressionContext,
   UnaryMinusExpressionContext,
-  YesterdayExpressionContext,
-  IdentifierExpressionContext,
-  CountExpressionContext,
-  SortExpressionContext,
-  JoinExpressionContext,
-  LimitExpressionContext,
-  HeadExpressionContext,
-  TailExpressionContext
+  XorExpressionContext,
+  AddSubtractExpressionContext,
+  MultiplyDivideModExpressionContext,
 } from '~/generated/IdemParser';
 import { IdemVisitor } from '~/generated/IdemVisitor';
-import type { AstNodeType } from '~/types/ast';
-export type ASTNode = {
-  type: AstNodeType;
-  [key: string]: any;
-};
+import type { ASTNode } from '~/types/ast';
 
 export class Visitor extends IdemVisitor<ASTNode> {
-  private constructor() {
-    super();
-  }
+  visitParse = (ctx: ParseContext): ASTNode => this.visit(ctx.expression());
 
-  private static INSTANCE = new Visitor();
-  static getInstance = () => Visitor.INSTANCE;
+  visitParenthesesExpression = (ctx: ParenthesesExpressionContext): ASTNode => this.visit(ctx.expression());
 
-  visitParse = (ctx: ParseContext): ASTNode => this.visit(ctx.expression()) as ASTNode;
+  visitLiteralExpression = (ctx: LiteralExpressionContext): ASTNode => this.visit(ctx.literal());
 
-  visitPostfixFunctionCallExpression = (ctx: PostfixFunctionCallExpressionContext): ASTNode => ({
-    type: 'PostfixFunctionCall',
-    expr: this.visit(ctx.expression()),
-    functionName: ctx.Identifier().getText(),
-    args: ctx.exprList() ? (this.visit(ctx.exprList() as ExprListContext) as ASTNode).elements : [],
+  visitIdentifierExpression = (ctx: IdentifierExpressionContext): ASTNode => ({
+    type: 'Identifier',
+    name: ctx.getText(),
   });
 
-  visitLocalDateExpression = (ctx: LocalDateExpressionContext): ASTNode => ({
-    type: 'LocalDate',
-    value: ctx.getText(),
-  });
+  visitSelfExpression = (ctx: SelfExpressionContext): ASTNode => {
+    let node: ASTNode = { type: 'Self' };
+    if (ctx.Identifier().length > 0) {
+      for (const id of ctx.Identifier()) {
+        node = { type: 'Navigation', target: node, name: id.getText() };
+      }
+    }
+    return node;
+  };
 
-  visitTimestampExpression = (ctx: TimestampExpressionContext): ASTNode => ({
-    type: 'Timestamp',
-    value: ctx.getText(),
-  });
-
-  visitTimeExpression = (ctx: TimeExpressionContext): ASTNode => ({
-    type: 'Time',
-    value: ctx.getText(),
-  });
-
-  visitTodayExpression = (_ctx: TodayExpressionContext): ASTNode => ({ type: 'Today' });
-  visitYesterdayExpression = (_ctx: YesterdayExpressionContext): ASTNode => ({ type: 'Yesterday' });
-  visitTomorrowExpression = (_ctx: TomorrowExpressionContext): ASTNode => ({ type: 'Tomorrow' });
-
-  visitIndexedAccessExpression = (ctx: IndexedAccessExpressionContext): ASTNode => ({
-    type: 'IndexAccess',
-    expr: this.visit(ctx.expression()),
-    indexes: this.visit(ctx.indexes()),
-  });
-
-  visitSelfExpression = (ctx: SelfExpressionContext): ASTNode => ({
-    type: 'Self',
-    tags: this.visit(ctx.tags()),
+  visitNavigationExpression = (ctx: NavigationExpressionContext): ASTNode => ({
+    type: 'Navigation',
+    target: this.visit(ctx.expression()),
+    name: ctx.Identifier().getText(),
   });
 
   visitUnaryMinusExpression = (ctx: UnaryMinusExpressionContext): ASTNode => ({
-    type: 'UnaryMinus',
-    expr: this.visit(ctx.expression()),
-  });
-
-  visitMultiplyExpression = (ctx: MultiplyExpressionContext): ASTNode => ({
-    type: 'Multiply',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
+    type: 'Unary',
+    operator: '-',
+    children: [this.visit(ctx.expression())],
   });
 
   visitNotExpression = (ctx: NotExpressionContext): ASTNode => ({
-    type: 'Not',
-    expr: this.visit(ctx.expression()),
+    type: 'Unary',
+    operator: 'not',
+    children: [this.visit(ctx.expression())],
   });
 
-  visitPowerExpression = (ctx: PowerExpressionContext): ASTNode => ({
-    type: 'Power',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
+  private buildBinary = (left: ExpressionContext, op: any, right: ExpressionContext): ASTNode => ({
+    type: 'Binary',
+    operator: op.getText(),
+    children: [this.visit(left), this.visit(right)],
   });
 
-  visitDivideExpression = (ctx: DivideExpressionContext): ASTNode => ({
-    type: 'Divide',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitModulusExpression = (ctx: ModulusExpressionContext): ASTNode => ({
-    type: 'Modulus',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitDivExpression = (ctx: DivExpressionContext): ASTNode => ({
-    type: 'Div',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitModExpression = (ctx: ModExpressionContext): ASTNode => ({
-    type: 'Mod',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitHeadExpression = (ctx: HeadExpressionContext): ASTNode => ({
-    type: 'Head',
-    expression: this.visit(ctx.expression()),
-    amount: this.visit(ctx.amount),
-  });
-
-  visitTailExpression = (ctx: TailExpressionContext): ASTNode => ({
-    type: 'Tail',
-    expression: this.visit(ctx.expression()),
-    amount: this.visit(ctx.amount),
-  });
-
-  visitLimitExpression = (ctx: LimitExpressionContext): ASTNode => ({
-    type: 'Limit',
-    expression: this.visit(ctx.expression()),
-    offset: this.visit(ctx.offset),
-    count: this.visit(ctx.count),
-  });
-
-  visitJoinExpression = (ctx: JoinExpressionContext): ASTNode => ({
-    type: 'Join',
-    expression: this.visit(ctx.expression()),
-    selector: this.visit(ctx.selector),
-    delimiter: this.visit(ctx.delimiter),
-  });
-
-  visitCountExpression = (ctx: CountExpressionContext): ASTNode => ({
-    type: 'Count',
-    expression: this.visit(ctx.expression()),
-  });
-
-  visitSortExpression = (ctx: SortExpressionContext): ASTNode => ({
-    type: 'Sort',
-    expression: this.visit(ctx.expression()),
-    selector: this.visit(ctx.selector),
-    direction: ctx.direction.text.toUpperCase(),
-  });
-
-  visitAddExpression = (ctx: AddExpressionContext): ASTNode => ({
-    type: 'Add',
-    left: this.visit(ctx.expression(0) as ExpressionContext),    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitSubtractExpression = (ctx: SubtractExpressionContext): ASTNode => ({
-    type: 'Subtract',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitAddDatePartExpression = (ctx: AddDatePartExpressionContext): ASTNode => ({
-    type: 'AddDatePart',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-    datePart: ctx.DatePart().getText(),
-  });
-
-  visitSubtractDatePartExpression = (ctx: SubtractDatePartExpressionContext): ASTNode => ({
-    type: 'SubtractDatePart',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-    datePart: ctx.DatePart().getText(),
-  });
-
-  visitGtEqExpression = (ctx: GtEqExpressionContext): ASTNode => ({
-    type: 'Gte',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitLtEqExpression = (ctx: LtEqExpressionContext): ASTNode => ({
-    type: 'Lte',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitGtExpression = (ctx: GtExpressionContext): ASTNode => ({
-    type: 'Gt',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitLtExpression = (ctx: LtExpressionContext): ASTNode => ({
-    type: 'Lt',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitEqExpression = (ctx: EqExpressionContext): ASTNode => ({
-    type: 'Eq',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitNotEqExpression = (ctx: NotEqExpressionContext): ASTNode => ({
-    type: 'NotEq',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitAndExpression = (ctx: AndExpressionContext): ASTNode => ({
-    type: 'And',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitOrExpression = (ctx: OrExpressionContext): ASTNode => ({
-    type: 'Or',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitXorExpression = (ctx: XorExpressionContext): ASTNode => ({
-    type: 'Xor',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
-
-  visitImpliesExpression = (ctx: ImpliesExpressionContext): ASTNode => ({
-    type: 'Implies',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
-  });
+  visitPowerExpression = (ctx: PowerExpressionContext): ASTNode => this.buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+  visitMultiplyDivideModExpression = (ctx: MultiplyDivideModExpressionContext): ASTNode => this.buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+  visitAddSubtractExpression = (ctx: AddSubtractExpressionContext): ASTNode => this.buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+  visitComparisonExpression = (ctx: ComparisonExpressionContext): ASTNode => this.buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+  visitEqualityExpression = (ctx: EqualityExpressionContext): ASTNode => this.buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+  visitAndExpression = (ctx: AndExpressionContext): ASTNode => this.buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+  visitXorExpression = (ctx: XorExpressionContext): ASTNode => this.buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+  visitOrExpression = (ctx: OrExpressionContext): ASTNode => this.buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
+  visitImpliesExpression = (ctx: ImpliesExpressionContext): ASTNode => this.buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
 
   visitTernaryExpression = (ctx: TernaryExpressionContext): ASTNode => ({
     type: 'Ternary',
-    cond: this.visit(ctx.expression(0) as ExpressionContext),
-    // biome-ignore lint/suspicious/noThenProperty: <explanation>
-    then: this.visit(ctx.expression(1) as ExpressionContext),
-    else: this.visit(ctx.expression(2) as ExpressionContext),
+    children: [this.visit(ctx.expression(0)), this.visit(ctx.expression(1)), this.visit(ctx.expression(2))],
   });
 
   visitInExpression = (ctx: InExpressionContext): ASTNode => ({
     type: 'In',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
+    children: [this.visit(ctx.expression(0)), this.visit(ctx.expression(1))],
   });
 
-  visitFilterExpression = (ctx: FilterExpressionContext): ASTNode => ({
-    type: 'Filter',
-    expression: this.visit(ctx.expression()),
-    cond: this.visit(ctx.cond),
+  visitFunctionCallExpression = (ctx: FunctionCallExpressionContext): ASTNode => ({
+    type: 'FunctionCall',
+    target: this.visit(ctx.expression()),
+    name: ctx.Identifier().getText(),
+    args: ctx.argumentList() ? this.visit(ctx.argumentList()).args : [],
   });
 
-  visitNumberExpression = (ctx: NumberExpressionContext): ASTNode => ({
-    type: 'Number',
-    value: Number.parseFloat(ctx.getText()),  });
-
-  visitBoolExpression = (ctx: BoolExpressionContext): ASTNode => ({
-    type: 'Boolean',
-    value: ctx.getText() === 'true',
-  });
-
-  visitNullExpression = (_ctx: NullExpressionContext): ASTNode => ({
-    type: 'Null',
-    value: null,
-  });
-
-  visitIdentifierExpression = (ctx: IdentifierExpressionContext): ASTNode => ({
-    type: 'Identifier',
-    value: ctx.getText(),
-  });
-
-  visitListExpression = (ctx: ListExpressionContext): ASTNode => this.visit(ctx.list()) as ASTNode;
-
-  visitStringExpression = (ctx: StringExpressionContext): ASTNode => {
-    const raw = ctx.getText();
-    return { type: 'String', value: raw.substring(1, raw.length - 1) };
-  };
-
-  visitExpressionExpression = (ctx: ExpressionExpressionContext): ASTNode => {
-    const base = this.visit(ctx.expression());
-    if (ctx.pointers()) {
-      return { type: 'PointerAccess', expr: base, pointers: this.visit(ctx.pointers() as PointersContext) };
+  visitArgumentList = (ctx: ArgumentListContext): ASTNode => {
+    const args: ASTNode[] = [];
+    if (ctx.iteratorArgument()) {
+      args.push(this.visit(ctx.iteratorArgument()));
     }
-    return base as ASTNode;
+    ctx.expression().forEach(expr => args.push(this.visit(expr)));
+    return { type: 'ArgumentList', args };
   };
 
-  visitList = (ctx: ListContext): ASTNode => ({
-    type: 'List',
-    elements: ctx.exprList() ? (this.visit(ctx.exprList() as ExprListContext) as ASTNode).elements : [],
+  visitIteratorArgument = (ctx: IteratorArgumentContext): ASTNode => ({
+    type: 'IteratorArgument',
+    iteratorVar: ctx.Identifier().getText(),
+    iteratorExpression: this.visit(ctx.expression()),
   });
 
-  visitExprList = (ctx: ExprListContext): ASTNode => ({
-    type: 'ExprList',
-    elements: ctx.expression().map((e) => this.visit(e)),
+  visitIndexAccessExpression = (ctx: IndexAccessExpressionContext): ASTNode => ({
+    type: 'IndexAccess',
+    children: [this.visit(ctx.expression(0)), this.visit(ctx.expression(1))],
   });
 
-  visitIndexes = (ctx: IndexesContext): ASTNode => ({
-    type: 'Indexes',
-    elements: ctx.expression().map((e) => this.visit(e)),
-  });
-
-  visitPointers = (ctx: PointersContext): ASTNode => ({
-    type: 'Pointers',
-    elements: ctx.pointer().map((p) => this.visit(p)),
-  });
-
-  visitPointer = (ctx: PointerContext): ASTNode => {
-    if (ctx.tags()) {
-      return this.visit(ctx.tags() as TagsContext) as ASTNode;
+  visitLiteral = (ctx: LiteralContext): ASTNode => {
+    const child = ctx.getChild(0);
+    if (child instanceof LiteralContext) {
+      return this.visit(child);
     }
-    return {
-      type: 'Index',
-      indexes: this.visit(ctx.indexes() as IndexesContext),
-    };
-  };
+    const ruleName = (child.getPayload() as any).ruleIndex;
+    const ruleNameStr = (ctx.parser.ruleNames as any)[ruleName];
 
-  visitTags = (ctx: TagsContext): ASTNode => ({
-    type: 'Tags',
-    features: ctx.feature().map((f) => f.Identifier().getText()),
-  });
+    const text = ctx.getText();
+    switch (ruleNameStr) {
+      case 'numericLiteral': return { type: 'Number', value: parseFloat(text) };
+      case 'StringLiteral': return { type: 'String', value: text.substring(1, text.length - 1) };
+      case 'booleanLiteral': return { type: 'Boolean', value: text === 'true' };
+      case 'nullLiteral': return { type: 'Null' };
+      case 'temporalLiteral': {
+        const typeChild = ctx.temporalLiteral().getChild(0).constructor.name;
+        const temporalText = ctx.temporalLiteral().getText();
+        switch (typeChild) {
+            case 'DateLiteralContext': return { type: 'Date', value: temporalText.replaceAll('`', '') };
+            case 'TimestampLiteralContext': return { type: 'Timestamp', value: temporalText.replaceAll('`', '') };
+            case 'TimeLiteralContext': return { type: 'Time', value: temporalText.replaceAll('`', '') };
+            case 'TodayLiteralContext': return { type: 'Today' };
+            case 'YesterdayLiteralContext': return { type: 'Yesterday' };
+            case 'TomorrowLiteralContext': return { type: 'Tomorrow' };
+        }
+      }
+    }
+    throw new Error(`Unknown literal type: ${ruleNameStr}`);
+  };
 }

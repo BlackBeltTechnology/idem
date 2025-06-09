@@ -5,155 +5,105 @@ parse
   ;
 
 expression
-  : expression '!' Identifier '(' exprList? ')' pointers? #postfixFunctionCallExpression
-  | Self tags                                 #selfExpression
-  | Subtract expression                       #unaryMinusExpression
-  | Not expression                            #notExpression
-  | expression Pow expression                 #powerExpression
-  | expression indexes                        #indexedAccessExpression
-  | expression Multiply expression            #multiplyExpression
-  | expression Divide expression              #divideExpression
-  | expression Modulus expression             #modulusExpression
-  | expression Div expression                 #divExpression
-  | expression Mod expression                 #modExpression
-  | expression Add expression                 #addExpression
-  | expression Subtract expression            #subtractExpression
-  | expression Add DatePart                   #addDatePartExpression
-  | expression Subtract DatePart              #subtractDatePartExpression
-  | expression GTEquals expression            #gtEqExpression
-  | expression LTEquals expression            #ltEqExpression
-  | expression GT expression                  #gtExpression
-  | expression LT expression                  #ltExpression
-  | expression Equals expression              #eqExpression
-  | expression NEquals expression             #notEqExpression
-  | expression And expression                 #andExpression
-  | expression Xor expression                 #xorExpression
-  | expression Or expression                  #orExpression
-  | expression Implies expression             #impliesExpression
-  | expression '?' expression ':' expression  #ternaryExpression
-  | expression In expression                  #inExpression
-  | Number                                    #numberExpression
-  | Bool                                      #boolExpression
-  | Null                                      #nullExpression
-  | list                                      #listExpression
-  | String                                    #stringExpression
-  | LocalDate                                 #localDateExpression
-  | Timestamp                                 #timestampExpression
-  | Time                                      #timeExpression
-  | Today                                     #todayExpression
-  | Yesterday                                 #yesterdayExpression
-  | Tomorrow                                  #tomorrowExpression
-  | OParen expression CParen pointers?        #expressionExpression
+  : expression '!' Identifier '(' argumentList? ')'         #functionCallExpression
+  | expression '.' Identifier                               #navigationExpression
+  | Self ('.' Identifier)*                                  #selfExpression
+  | '-' expression                                          #unaryMinusExpression
+  | 'not' expression                                        #notExpression
+  | expression '^' expression                               #powerExpression
+  | expression ('*' | '/' | 'div' | 'mod' | '%') expression #multiplyDivideModExpression
+  | expression ('+' | '-') expression                       #addSubtractExpression
+  | expression ('<=' | '>=' | '<' | '>') expression         #comparisonExpression
+  | expression ('=' | '==' | '!=' | '<>') expression        #equalityExpression
+  | expression 'and' expression                             #andExpression
+  | expression 'xor' expression                             #xorExpression
+  | expression 'or' expression                              #orExpression
+  | expression 'implies' expression                         #impliesExpression
+  | expression '?' expression ':' expression                #ternaryExpression
+  | expression 'in' expression                              #inExpression
+  | literal                                                 #literalExpression
+  | Identifier                                              #identifierExpression
+  | '(' expression ')'                                      #parenthesesExpression
+  | expression '[' expression ']'                           #indexAccessExpression
   ;
 
-list
-  : '[' exprList? ']'
+literal
+  : numericLiteral
+  | stringLiteral
+  | booleanLiteral
+  | temporalLiteral
+  | nullLiteral
   ;
 
-indexes
-  : ('[' expression ']')+
+stringLiteral
+  : StringLiteral
   ;
 
-pointers
-  : (pointer)+
+nullLiteral
+  : 'null'
   ;
 
-pointer
-  : tags
-  | indexes
+numericLiteral
+  : Number
   ;
 
-tags
-  : ('.' feature )+
-  ;
-
-feature
-  : Identifier
-  ;
-
-exprList
-  : expression (',' expression)*
-  ;
-
-Self      : 'self';
-In        : 'in';
-Null      : 'null';
-Today     : 'today';
-Yesterday : 'yesterday';
-Tomorrow  : 'tomorrow';
-
-Or        : 'or';
-Xor       : 'xor';
-And       : 'and';
-Equals    : '==';
-NEquals   : '!=';
-GTEquals  : '>=';
-LTEquals  : '<=';
-Pow       : '^';
-Not       : 'not';
-Implies   : 'implies';
-GT        : '>';
-LT        : '<';
-Add       : '+';
-Subtract  : '-';
-Multiply  : '*';
-Divide    : '/';
-Modulus   : '%';
-Div       : 'div';
-Mod       : 'mod';
-OBracket  : '[';
-CBracket  : ']';
-OParen    : '(';
-CParen    : ')';
-SColon    : ';';
-Assign    : '=';
-Comma     : ',';
-QMark     : '?';
-Colon     : ':';
-
-Bool
+booleanLiteral
   : 'true'
   | 'false'
   ;
 
+temporalLiteral
+  : '`' DATE '`'                #dateLiteral
+  | '`' TIMESTAMP '`'           #timestampLiteral
+  | '`' TIME '`'                #timeLiteral
+  | 'today'                     #todayLiteral
+  | 'yesterday'                 #yesterdayLiteral
+  | 'tomorrow'                  #tomorrowLiteral
+  ;
+
+argumentList
+  : iteratorArgument (',' expression)*
+  | expression (',' expression)*
+  ;
+
+iteratorArgument
+  : Identifier '|' expression
+  ;
+
+// --- LEXER ---
+
+// Keywords
+Self: 'self';
+In: 'in';
+
+// Operators
+Or: 'or';
+Xor: 'xor';
+And: 'and';
+Not: 'not';
+Implies: 'implies';
+
+// Fragment for reuse
+fragment LETTER: 'a'..'z' | 'A'..'Z' | '_';
+fragment DIGIT: '0'..'9';
+
 Identifier
-  : ('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')*
+  : LETTER (LETTER | DIGIT)*
   ;
 
 Number
-  : Int ('.' Digit*)?
+  : DIGIT+ ('.' DIGIT+)?
   ;
 
-String
-  : ["] (~["\r\n] | '\\\\' | '\\"')* ["]
-  | ['] (~['\r\n] | '\\\\' | '\\\'')* [']
+StringLiteral
+  : '"' ( ~["\r\n] | '\\\\' | '\\"' )* '"'
+  | '\'' ( ~['\r\n] | '\\\\' | '\\\'' )* '\''
   ;
 
-LocalDate
-  : Digit Digit Digit Digit '-' Digit Digit '-' Digit Digit
-  ;
+DATE: DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT;
+TIMESTAMP: DATE 'T' DIGIT DIGIT ':' DIGIT DIGIT (':' DIGIT DIGIT)? ('Z')?;
+TIME: DIGIT DIGIT ':' DIGIT DIGIT (':' DIGIT DIGIT)?;
 
-Timestamp
-  : LocalDate 'T' Digit Digit ':' Digit Digit ':' Digit Digit
+WS
+  : [ \t\r\n]+ -> skip
   ;
-
-Time
-  : Digit Digit ':' Digit Digit (':' Digit Digit)?
-  ;
-
-DatePart
-  : Number ([Dd] | [Ww] | [Mm] | [Yy])
-  ;
-
-Space
-  : [ \t\r\n\u000C] -> skip
-  ;
-
-fragment Int
-  : [1-9] Digit*
-  | '0'
-  ;
-
-fragment Digit
-  : [0-9]
-;

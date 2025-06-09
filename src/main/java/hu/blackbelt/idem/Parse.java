@@ -12,7 +12,7 @@ public class Parse {
     }
 
     public static AstNode parseContextToAst(IdemParser.ParseContext parseContext) {
-        return IdemDefaultVisitor.getInstance().visitNode(parseContext);
+        return new IdemDefaultVisitor().visit(parseContext);
     }
 
     public static AstNode expressionToAst(String expression) {

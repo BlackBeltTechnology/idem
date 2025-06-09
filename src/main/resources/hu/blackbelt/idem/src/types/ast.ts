@@ -1,62 +1,43 @@
 export type AstNodeType =
-  // Primitives & Literals
+  // Expressions
+  | 'Binary'
+  | 'Unary'
+  | 'Ternary'
+  | 'In'
+  | 'FunctionCall'
+  | 'Navigation'
+  | 'IndexAccess'
+  | 'Self'
+  | 'Identifier'
+
+  // Literals
   | 'Number'
+  | 'String'
   | 'Boolean'
   | 'Null'
-  | 'String'
-  | 'List'
-  | 'Self'
-  // Array functions
-  | 'Head'
-  | 'Tail'
-  | 'Limit'
-  | 'Join'
-  | 'Count'
-  | 'Sort'
-  | 'Filter'
-  // Date/Time Literals & Keywords
-  | 'LocalDate'
+  | 'Date'
   | 'Timestamp'
   | 'Time'
   | 'Today'
   | 'Yesterday'
   | 'Tomorrow'
 
-  // Expressions
-  | 'Add'
-  | 'Subtract'
-  | 'Multiply'
-  | 'Divide'
-  | 'Modulus'
-  | 'Power'
-  | 'And'
-  | 'Or'
-  | 'Xor'
-  | 'Div'
-  | 'Mod'
-  | 'Not'
-  | 'UnaryMinus'
-  | 'Eq'
-  | 'NotEq'
-  | 'Gt'
-  | 'Gte'
-  | 'Lt'
-  | 'Lte'
-  | 'Ternary'
-  | 'In'
-  | 'Implies'
-  | 'AddDatePart'
-  | 'SubtractDatePart'
-  | 'IndexAccess'
-  | 'PointerAccess'
+  // Internal structures
+  | 'ArgumentList'
+  | 'IteratorArgument';
 
-  // New Postfix Call
-  | 'PostfixFunctionCall'
+export interface ASTNode {
+  type: AstNodeType;
+  value?: any;
+  operator?: string;
+  children?: ASTNode[];
+  name?: string; // identifier or function name
 
-  // Internal helper types
-  | 'Block'
-  | 'ExprList'
-  | 'Indexes'
-  | 'Index'
-  | 'Pointers'
-  | 'Tags';
+  // Function call specific
+  target?: ASTNode;
+  args?: ASTNode[];
+
+  // Iterator specific
+  iteratorVar?: string;
+  iteratorExpression?: ASTNode;
+}
