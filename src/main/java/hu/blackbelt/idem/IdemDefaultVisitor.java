@@ -62,10 +62,10 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
                 .build();
     }
 
+    @Override
     public AstNode visitTimeExpression(IdemParser.TimeExpressionContext ctx) {
         String timeText = ctx.getText();
-        DateTimeFormatter formatter = timeText.length() > 5 ? DateTimeFormatter.ISO_LOCAL_TIME : DateTimeFormatter.ofPattern("HH:mm");
-        return AstNode.builder()
+        DateTimeFormatter formatter = timeText.length() > 5 ? DateTimeFormatter.ISO_LOCAL_TIME : DateTimeFormatter.ofPattern("HH:mm");        return AstNode.builder()
                 .type(AstNodeType.Time)
                 .value(LocalTime.parse(timeText, formatter))
                 .build();

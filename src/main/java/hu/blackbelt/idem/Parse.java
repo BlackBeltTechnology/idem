@@ -12,12 +12,11 @@ public class Parse {
     }
 
     public static AstNode parseContextToAst(IdemParser.ParseContext parseContext) {
-        return (AstNode) (IdemDefaultVisitor.getInstance().visit(parseContext));
-    };
+        return IdemDefaultVisitor.getInstance().visitNode(parseContext);
+    }
 
-    public static AstNode expressionToAst (String expression) {
+    public static AstNode expressionToAst(String expression) {
         var parseContext = parse(expression);
         return parseContextToAst(parseContext);
-    };
-
+    }
 }

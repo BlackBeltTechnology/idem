@@ -46,10 +46,10 @@ import type {
   TomorrowExpressionContext,
   UnaryMinusExpressionContext,
   YesterdayExpressionContext,
+  IdentifierExpressionContext
 } from '~/generated/IdemParser';
 import { IdemVisitor } from '~/generated/IdemVisitor';
 import type { AstNodeType } from '~/types/ast';
-
 export type ASTNode = {
   type: AstNodeType;
   [key: string]: any;
@@ -261,6 +261,11 @@ export class Visitor extends IdemVisitor<ASTNode> {
   visitNullExpression = (_ctx: NullExpressionContext): ASTNode => ({
     type: 'Null',
     value: null,
+  });
+
+  visitIdentifierExpression = (ctx: IdentifierExpressionContext): ASTNode => ({
+    type: 'Identifier',
+    value: ctx.getText(),
   });
 
   visitListExpression = (ctx: ListExpressionContext): ASTNode => this.visit(ctx.list()) as ASTNode;

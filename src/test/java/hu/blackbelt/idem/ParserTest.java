@@ -410,8 +410,6 @@ class ParserTest {
         assertEquals(expected, actual);
     }
 
-    // --- NEW TESTS FOR POSTFIX SYNTAX ---
-
     @Test
     @DisplayName("parses a postfix function call with no arguments")
     void postfixFunctionCallNoArgs() {

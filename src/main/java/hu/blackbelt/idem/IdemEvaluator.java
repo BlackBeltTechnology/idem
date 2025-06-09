@@ -2,10 +2,7 @@ package hu.blackbelt.idem;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -184,27 +181,53 @@ public class IdemEvaluator {
         Object dateValue = evaluate(node.getLeft(), ctx);
         Matcher matcher = DATE_PART_PATTERN.matcher(node.getDatePart());
         if (!matcher.matches()) throw new IllegalArgumentException("Invalid DatePart format: " + node.getDatePart());
+        ZonedDateTime zdt;
 
         long amount = Long.parseLong(matcher.group(1)) * sign;
         String unit = matcher.group(2).toLowerCase();
-
-        ZonedDateTime zdt;
         if (dateValue instanceof LocalDate) {
             zdt = ((LocalDate) dateValue).atStartOfDay(ZoneId.systemDefault());
+            switch (unit) {
+                case "d":
+                    return ((LocalDate) dateValue).plusDays(amount);
+                case "w":
+                    return ((LocalDate) dateValue).plusWeeks(amount);
+                case "m":
+                    return ((LocalDate) dateValue).plusMonths(amount);
+                case "y":
+                    return ((LocalDate) dateValue).plusYears(amount);
+            }
         } else if (dateValue instanceof LocalDateTime) {
             zdt = ((LocalDateTime) dateValue).atZone(ZoneId.systemDefault());
+            switch (unit) {
+                case "d":
+                    return ((LocalDateTime) dateValue).plusDays(amount);
+                case "w":
+                    return ((LocalDateTime) dateValue).plusWeeks(amount);
+                case "m":
+                    return ((LocalDateTime) dateValue).plusMonths(amount);
+                case "y":
+                    return ((LocalDateTime) dateValue).plusYears(amount);
+                case "h":
+                    return ((LocalDateTime) dateValue).plusHours(amount);
+                case "M":
+                    return ((LocalDateTime) dateValue).plusMinutes(amount);
+                case "s":
+                    return ((LocalDateTime) dateValue).plusSeconds(amount);
+            }
+        } else if (dateValue instanceof LocalTime) {
+            switch (unit) {
+                case "h":
+                    return ((LocalTime) dateValue).plusHours(amount);
+               case "M":
+                    return ((LocalTime) dateValue).plusMinutes(amount);
+                case "s":
+                    return ((LocalTime) dateValue).plusSeconds(amount);
+            }
         } else {
             throw new IllegalArgumentException("Date arithmetic requires a LocalDate or LocalDateTime");
         }
-
-        switch (unit) {
-            case "d": zdt = zdt.plusDays(amount); break;
-            case "w": zdt = zdt.plusWeeks(amount); break;
-            case "m": zdt = zdt.plusMonths(amount); break;
-            case "y": zdt = zdt.plusYears(amount); break;
-        }
-
-        return dateValue instanceof LocalDate ? zdt.toLocalDate() : zdt.toLocalDateTime();
+        return null;
     }
 
     private static BigDecimal toBigDecimal(Object value) {

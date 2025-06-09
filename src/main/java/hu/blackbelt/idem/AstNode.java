@@ -17,10 +17,10 @@ public class AstNode {
     Object value;
     List<AstNode> elements;
     List<String> features;
+    String direction;  // For array functions: ASC or DESC
 
     // Postfix function calls
     String functionName;
-    String sortDirection; // ASC or DESC
 
     AstNode selector;
     String delimiter;

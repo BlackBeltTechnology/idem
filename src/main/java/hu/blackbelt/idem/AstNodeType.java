@@ -8,6 +8,16 @@ public enum AstNodeType {
     List,
     Self,
 
+    // Array functions
+    Head,
+    Tail,
+    Limit,
+    Join,
+    Count,
+    Sort,
+    Filter,
+    Selector,
+
     // Literals & Keywords
     LocalDate,
     Timestamp,

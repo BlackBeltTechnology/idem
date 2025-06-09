@@ -8,14 +8,11 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.WeekFields;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
 import static java.util.Map.entry;
-
 public class FunctionDispatcher {
 
     // --- FUNCTION MAPS ---
@@ -76,12 +73,10 @@ public class FunctionDispatcher {
             entry("dayOfWeek", (val, args) -> new BigDecimal(val.getDayOfWeek().getValue())),
             entry("weekOfYear", (val, args) -> new BigDecimal(val.get(WeekFields.ISO.weekOfYear()))),
             entry("weekOfMonth", (val, args) -> new BigDecimal(val.get(WeekFields.ISO.weekOfMonth()))),
-            // Old ...Diff functions
-            entry("dayDiff", (val, args) -> new BigDecimal(ChronoUnit.DAYS.between(val, (LocalDate)args.get(0)))),
-            entry("weekDiff", (val, args) -> new BigDecimal(ChronoUnit.WEEKS.between(val, (LocalDate)args.get(0)))),
-            entry("monthDiff", (val, args) -> new BigDecimal(ChronoUnit.MONTHS.between(val, (LocalDate)args.get(0)))),
-            entry("yearDiff", (val, args) -> new BigDecimal(ChronoUnit.YEARS.between(val, (LocalDate)args.get(0)))),
-            // New difference function
+            entry("dayDiff", (val, args) -> new BigDecimal(ChronoUnit.DAYS.between(val, (LocalDate) args.get(0)))),
+            entry("weekDiff", (val, args) -> new BigDecimal(ChronoUnit.WEEKS.between(val, (LocalDate) args.get(0)))),
+            entry("monthDiff", (val, args) -> new BigDecimal(ChronoUnit.MONTHS.between(val, (LocalDate) args.get(0)))),
+            entry("yearDiff", (val, args) -> new BigDecimal(ChronoUnit.YEARS.between(val, (LocalDate) args.get(0)))),
             entry("difference", (val, args) -> new BigDecimal(ChronoUnit.SECONDS.between(
                     val.atStartOfDay(ZoneId.systemDefault()),
                     ((LocalDate) args.get(0)).atStartOfDay(ZoneId.systemDefault())
@@ -105,7 +100,6 @@ public class FunctionDispatcher {
             entry("difference", (val, args) -> new BigDecimal(ChronoUnit.SECONDS.between(val, (LocalTime) args.get(0))))
     );
 
-    // --- DISPATCHER ---
     public static Object dispatch(Object base, String functionName, List<Object> args) {
         if (OBJECT_FUNCTIONS.containsKey(functionName)) {
             return OBJECT_FUNCTIONS.get(functionName).apply(base, args);
