@@ -120,8 +120,27 @@ class GitignoreManager:
             current_dir = os.path.dirname(current_dir)
         return False
 
+def copy_to_clipboard(text: str):
+    """Copies the given text to the system clipboard (macOS & Linux)."""
+    os_name = platform.system()
+    try:
+        if os_name == 'Darwin':
+            subprocess.run(['pbcopy'], input=text.encode('utf-8'), check=True)
+            print("✅ Prompt context copied to clipboard for macOS.")
+        elif os_name == 'Linux':
+            if shutil.which('xclip'):
+                subprocess.run(['xclip', '-selection', 'clipboard'], input=text.encode('utf-8'), check=True)
+                print("✅ Prompt context copied to clipboard using xclip.")
+            elif shutil.which('xsel'):
+                subprocess.run(['xsel', '--clipboard', '--input'], input=text.encode('utf-8'), check=True)
+                print("✅ Prompt context copied to clipboard using xsel.")
+            else:
+                print("⚠️ Could not copy to clipboard. Please install 'xclip' or 'xsel'.", file=sys.stderr)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Clipboard command failed: {e}", file=sys.stderr)
+
 def find_source_files(start_path, exclude_patterns=None):
-    source_files_map = {}; supported_extensions = (".ts", ".java", ".g4", ".py", ".js", ".html", ".css", ".md")
+    source_files_map = {}; supported_extensions = (".ts", ".java", ".g4") # , ".py", ".js", ".html", ".css", ".md")
     ignore_manager = GitignoreManager(start_path)
     if exclude_patterns is None: exclude_patterns = []
     for root, dirs, files in os.walk(start_path, topdown=True):
@@ -202,6 +221,7 @@ def _process_file_overwrite(ai_client, file_path, file_content, system_prompt, u
                 print(f"⚠️ API Error ({error_code}) for {file_path}. Retrying in {delay:.2f} seconds...", file=sys.stderr); time.sleep(delay)
             else: print(f"❌ FATAL Error for {file_path}: {e}", file=sys.stderr); return False
     print(f"❌ All retry attempts failed for {file_path}.", file=sys.stderr); return False
+
 
 # --- Patch Workflow Functions ---
 def _get_ai_fix_for_patch(ai_client, filename, original_code, broken_patch, git_error, debug_mode=False):
@@ -326,7 +346,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Applies AI-driven code modifications to a project.", formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--model', help="The AI model to use.", choices=MODEL_MAP.keys(), required=True)
-    parser.add_argument('--workflow', help="The method for applying changes.", choices=['overwrite', 'patch'], default='patch')
+    parser.add_argument('--workflow', help="The method for applying changes.", choices=['none', 'overwrite', 'patch'], default='none')
     parser.add_argument('--prompt', help="Instruction for the AI. If not provided, reads from stdin.")
     parser.add_argument('--exclude', nargs='*', default=[], help="Glob patterns of files to exclude.")
     parser.add_argument('--debug', action='store_true', help="Enable debug mode to print full prompts and responses.")
@@ -360,6 +380,9 @@ if __name__ == "__main__":
     print(f"\nScanning project in: {os.path.abspath('.')}", file=sys.stderr)
     source_files_map = find_source_files('.', args.exclude)
     if not source_files_map: print("No matching source files found.", file=sys.stderr); sys.exit(0)
+
+    # -- Add to clipboard
+    copy_to_clipboard(create_context_prompt(source_files_map));
 
     # =================================================================================
     # DUAL-MODE WORKFLOW: Selects workflow based on the --workflow flag
@@ -395,7 +418,7 @@ if __name__ == "__main__":
                 print(failure['patch_content'], file=sys.stderr)
             print("\n" + "="*40, file=sys.stderr)
 
-    else: # Default workflow is 'overwrite'
+    elif args.workflow == 'overwrite': # Default workflow is 'overwrite'
         workflow_intro = "🚀 Starting one-by-one file overwrite workflow."
         if args.backup: workflow_intro += " Automatic backups (.bak) are enabled."
         else: workflow_intro += " WARNING: Automatic backups are disabled."
@@ -423,3 +446,5 @@ if __name__ == "__main__":
             print(f"❌ Files that failed processing:  {total_failed}/{total_files}", file=sys.stderr)
         else: print("No files were processed.", file=sys.stderr)
         if total_failed > 0: print("\nReview the errors above for failed files.", file=sys.stderr)
+    else:
+        print(f"✅ Concated files copied to clipboard: ", file=sys.stderr)

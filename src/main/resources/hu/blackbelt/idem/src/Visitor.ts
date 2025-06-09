@@ -10,6 +10,7 @@ import type {
   ExprListContext,
   ExpressionContext,
   ExpressionExpressionContext,
+  FilterExpressionContext,
   GtEqExpressionContext,
   GtExpressionContext,
   InExpressionContext,
@@ -21,6 +22,7 @@ import type {
   LocalDateExpressionContext,
   LtEqExpressionContext,
   LtExpressionContext,
+  MinExpressionContext,
   ModulusExpressionContext,
   MultiplyExpressionContext,
   ModExpressionContext,
@@ -46,7 +48,13 @@ import type {
   TomorrowExpressionContext,
   UnaryMinusExpressionContext,
   YesterdayExpressionContext,
-  IdentifierExpressionContext
+  IdentifierExpressionContext,
+  CountExpressionContext,
+  SortExpressionContext,
+  JoinExpressionContext,
+  LimitExpressionContext,
+  HeadExpressionContext,
+  TailExpressionContext
 } from '~/generated/IdemParser';
 import { IdemVisitor } from '~/generated/IdemVisitor';
 import type { AstNodeType } from '~/types/ast';
@@ -148,10 +156,47 @@ export class Visitor extends IdemVisitor<ASTNode> {
     right: this.visit(ctx.expression(1) as ExpressionContext),
   });
 
+  visitHeadExpression = (ctx: HeadExpressionContext): ASTNode => ({
+    type: 'Head',
+    expression: this.visit(ctx.expression()),
+    amount: this.visit(ctx.amount),
+  });
+
+  visitTailExpression = (ctx: TailExpressionContext): ASTNode => ({
+    type: 'Tail',
+    expression: this.visit(ctx.expression()),
+    amount: this.visit(ctx.amount),
+  });
+
+  visitLimitExpression = (ctx: LimitExpressionContext): ASTNode => ({
+    type: 'Limit',
+    expression: this.visit(ctx.expression()),
+    offset: this.visit(ctx.offset),
+    count: this.visit(ctx.count),
+  });
+
+  visitJoinExpression = (ctx: JoinExpressionContext): ASTNode => ({
+    type: 'Join',
+    expression: this.visit(ctx.expression()),
+    selector: this.visit(ctx.selector),
+    delimiter: this.visit(ctx.delimiter),
+  });
+
+  visitCountExpression = (ctx: CountExpressionContext): ASTNode => ({
+    type: 'Count',
+    expression: this.visit(ctx.expression()),
+  });
+
+  visitSortExpression = (ctx: SortExpressionContext): ASTNode => ({
+    type: 'Sort',
+    expression: this.visit(ctx.expression()),
+    selector: this.visit(ctx.selector),
+    direction: ctx.direction.text.toUpperCase(),
+  });
+
   visitAddExpression = (ctx: AddExpressionContext): ASTNode => ({
     type: 'Add',
-    left: this.visit(ctx.expression(0) as ExpressionContext),
-    right: this.visit(ctx.expression(1) as ExpressionContext),
+    left: this.visit(ctx.expression(0) as ExpressionContext),    right: this.visit(ctx.expression(1) as ExpressionContext),
   });
 
   visitSubtractExpression = (ctx: SubtractExpressionContext): ASTNode => ({
@@ -248,10 +293,15 @@ export class Visitor extends IdemVisitor<ASTNode> {
     right: this.visit(ctx.expression(1) as ExpressionContext),
   });
 
+  visitFilterExpression = (ctx: FilterExpressionContext): ASTNode => ({
+    type: 'Filter',
+    expression: this.visit(ctx.expression()),
+    cond: this.visit(ctx.cond),
+  });
+
   visitNumberExpression = (ctx: NumberExpressionContext): ASTNode => ({
     type: 'Number',
-    value: Number.parseFloat(ctx.getText()),
-  });
+    value: Number.parseFloat(ctx.getText()),  });
 
   visitBoolExpression = (ctx: BoolExpressionContext): ASTNode => ({
     type: 'Boolean',

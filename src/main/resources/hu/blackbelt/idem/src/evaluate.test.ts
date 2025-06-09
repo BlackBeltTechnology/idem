@@ -230,6 +230,7 @@ describe('evaluate', () => {
 
   it('handles array count function', () => {
     expect(evalExpr('self.products!count()')).toEqual(3);
+    expect(evalExpr('[]!count()')).toEqual(0);
   });
 
   it('handles array sort function', () => {

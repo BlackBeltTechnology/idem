@@ -6,7 +6,14 @@ export type AstNodeType =
   | 'String'
   | 'List'
   | 'Self'
-
+  // Array functions
+  | 'Head'
+  | 'Tail'
+  | 'Limit'
+  | 'Join'
+  | 'Count'
+  | 'Sort'
+  | 'Filter'
   // Date/Time Literals & Keywords
   | 'LocalDate'
   | 'Timestamp'

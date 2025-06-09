@@ -2,10 +2,10 @@ package hu.blackbelt.idem;
 
 
 import lombok.Builder;
+import lombok.Singular;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
-
 import java.util.List;
 
 @Builder
@@ -13,12 +13,14 @@ import java.util.List;
 @ToString
 @EqualsAndHashCode
 public class AstNode {
+
     AstNodeType type;
     Object value;
+    @Singular
     List<AstNode> elements;
+    @Singular
     List<String> features;
     String direction;  // For array functions: ASC or DESC
-
     // Postfix function calls
     String functionName;
 

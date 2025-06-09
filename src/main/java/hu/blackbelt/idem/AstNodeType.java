@@ -16,6 +16,9 @@ public enum AstNodeType {
     Count,
     Sort,
     Filter,
+    Min,
+    Max,
+    Avg,
     Selector,
 
     // Literals & Keywords

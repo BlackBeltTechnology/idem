@@ -11,10 +11,10 @@ import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.util.Map.entry;
 public class FunctionDispatcher {
-
     // --- FUNCTION MAPS ---
 
     private static final Map<String, BiFunction<Object, List<Object>, Object>> OBJECT_FUNCTIONS = Map.ofEntries(
@@ -25,6 +25,15 @@ public class FunctionDispatcher {
                 if (val instanceof Map) return new BigDecimal(((Map<?, ?>) val).size());
                 if (val instanceof String) return new BigDecimal(((String) val).length());
                 throw new IllegalArgumentException("size() can only be called on Collection, Map or String.");
+            }),
+            entry("join", (val, args) -> {
+                if (!(val instanceof Collection)) {
+                    throw new IllegalArgumentException("join() can only be called on Collection.");
+                }
+                String separator = args.isEmpty() ? "," : (String) args.get(0);
+                return ((Collection<?>) val).stream()
+                        .map(Object::toString)
+                        .collect(Collectors.joining(separator));
             }),
             entry("toInt", (val, args) -> {
                 if (val instanceof Boolean) return (Boolean) val ? BigDecimal.ONE : BigDecimal.ZERO;
@@ -83,6 +92,80 @@ public class FunctionDispatcher {
             )))
     );
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static final Map<String, BiFunction<Collection, List<Object>, Object>> COLLECTION_FUNCTIONS = Map.ofEntries(
+            entry("head", (c, args) -> c.stream().limit(toBigDecimal(args.get(0)).longValue()).collect(Collectors.toList())),
+            entry("tail", (c, args) -> c.stream().skip(Math.max(0, c.size() - toBigDecimal(args.get(0)).longValue())).collect(Collectors.toList())),
+            entry("limit", (c, args) -> c.stream().skip(toBigDecimal(args.get(0)).longValue()).limit(toBigDecimal(args.get(1)).longValue()).collect(Collectors.toList())),
+            entry("count", (c, args) -> new BigDecimal(c.size())),
+            entry("join", (c, args) -> c.stream().map(Object::toString).collect(Collectors.joining(args.isEmpty() ? "," : (String)args.get(0)))),
+            entry("sum", (c, args) -> c.stream()
+                    .map(item -> getProperty(item, args))
+                    .map(FunctionDispatcher::toBigDecimal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add)),
+        entry("avg", (c, args) -> {
+            if (c.isEmpty()) return BigDecimal.ZERO;
+
+        BigDecimal sum = (BigDecimal) COLLECTION_FUNCTIONS.get("sum").apply(c, args);
+        return sum.divide(new BigDecimal(c.size()), 10, RoundingMode.HALF_UP);
+        }),
+            entry("min", (c, args) -> c.stream()
+            .map(item -> getProperty(item, args))
+            .min(FunctionDispatcher::compare)
+            .orElse(null)
+        ),
+        entry("max", (c, args) -> c.stream()
+            .map(item -> getProperty(item, args))
+            .max(FunctionDispatcher::compare)
+            .orElse(null)
+        ),
+        entry("filter", (c, args) -> {
+        String key = (String) args.get(0);
+        Object expected = args.get(1);
+        return c.stream()
+                .filter(item -> compare(getProperty(item, Collections.singletonList(key)), expected) == 0)
+                .collect(Collectors.toList());
+        }),
+            entry("sort", (c, args) -> {
+        Comparator<Object> comparator = Comparator.comparing(
+                item -> (Comparable) getProperty(item, args.subList(0, 1))
+                        );
+        if (args.size() > 1 && "DESC".equalsIgnoreCase((String)args.get(1))) {
+            comparator = comparator.reversed();
+            }
+        return c.stream().sorted(comparator).collect(Collectors.toList());
+        })
+            );
++
+        private static Object getProperty(Object item, List<Object> args) {
+        if (args.isEmpty() || !(args.get(0) instanceof String)) {
+            return item; // No property specified, operate on the item itself
+            }
+        if (item instanceof Map) {
+            return ((Map<?, ?>) item).get((String) args.get(0));
+            }
+        // Could add reflection for POJOs here if needed
+        throw new IllegalArgumentException("Cannot extract property from " + item.getClass().getSimpleName());
+        }
++
+        private static BigDecimal toBigDecimal(Object value) {
+        if (value instanceof BigDecimal) return (BigDecimal) value;
+        if (value instanceof Number) return new BigDecimal(value.toString());
+        throw new ClassCastException("Cannot cast " + value.getClass().getName() + " to BigDecimal.");
+        }
++
+        @SuppressWarnings({"unchecked", "rawtypes"})
+private static int compare(Object left, Object right) {
+        if (left == null || right == null) return left == right ? 0 : -1;
+        if (left instanceof Number && right instanceof Number) {
+            return toBigDecimal(left).compareTo(toBigDecimal(right));
+            }
+        if (left instanceof Comparable && left.getClass().isInstance(right)) {
+            return ((Comparable) left).compareTo(right);
+            }
+        return Objects.equals(left, right) ? 0 : -1;
+        }
++
     private static final Map<String, BiFunction<LocalDateTime, List<Object>, Object>> TIMESTAMP_FUNCTIONS = Map.ofEntries(
             entry("hour", (val, args) -> new BigDecimal(val.getHour())),
             entry("minute", (val, args) -> new BigDecimal(val.getMinute())),
