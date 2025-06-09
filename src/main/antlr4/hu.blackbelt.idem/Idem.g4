@@ -28,28 +28,12 @@ expression
   ;
 
 literal
-  : numericLiteral
-  | stringLiteral
-  | booleanLiteral
-  | temporalLiteral
-  | nullLiteral
-  ;
-
-stringLiteral
-  : StringLiteral
-  ;
-
-nullLiteral
-  : 'null'
-  ;
-
-numericLiteral
-  : Number
-  ;
-
-booleanLiteral
-  : 'true'
-  | 'false'
+  : Number        #numericLiteralAlt
+  | StringLiteral #stringLiteralAlt
+  | 'true'        #booleanTrueLiteralAlt
+  | 'false'       #booleanFalseLiteralAlt
+  | temporalLiteral #temporalLiteralAlt
+  | 'null'        #nullLiteralAlt
   ;
 
 temporalLiteral

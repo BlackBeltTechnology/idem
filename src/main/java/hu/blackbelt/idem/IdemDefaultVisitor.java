@@ -9,8 +9,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.stream.Collectors;
+import java.util.List;
 
 public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
 
@@ -24,6 +25,84 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
         return visit(ctx.expression());
     }
 
+    @Override
+    public AstNode visitLiteralExpression(IdemParser.LiteralExpressionContext ctx) {
+        return visit(ctx.literal());
+    }
+
+    // --- Literal Visitors ---
+    @Override
+    public AstNode visitNumericLiteralAlt(IdemParser.NumericLiteralAltContext ctx) {
+        return AstNode.builder().type(AstNodeType.NUMBER).value(new BigDecimal(ctx.getText())).build();
+    }
+
+    @Override
+    public AstNode visitStringLiteralAlt(IdemParser.StringLiteralAltContext ctx) {
+        String text = ctx.getText();
+        return AstNode.builder().type(AstNodeType.STRING).value(text.substring(1, text.length() - 1)).build();
+    }
+
+    @Override
+    public AstNode visitBooleanTrueLiteralAlt(IdemParser.BooleanTrueLiteralAltContext ctx) {
+        return AstNode.builder().type(AstNodeType.BOOLEAN).value(true).build();
+    }
+
+    @Override
+    public AstNode visitBooleanFalseLiteralAlt(IdemParser.BooleanFalseLiteralAltContext ctx) {
+        return AstNode.builder().type(AstNodeType.BOOLEAN).value(false).build();
+    }
+
+    @Override
+    public AstNode visitNullLiteralAlt(IdemParser.NullLiteralAltContext ctx) {
+        return AstNode.builder().type(AstNodeType.NULL).build();
+    }
+
+    @Override
+    public AstNode visitTemporalLiteralAlt(IdemParser.TemporalLiteralAltContext ctx) {
+        return visit(ctx.temporalLiteral());
+    }
+
+    @Override
+    public AstNode visitDateLiteral(IdemParser.DateLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.DATE).value(LocalDate.parse(ctx.DATE().getText())).build();
+    }
+
+    @Override
+    public AstNode visitTimestampLiteral(IdemParser.TimestampLiteralContext ctx) {
+        String tsText = ctx.TIMESTAMP().getText();
+        if (tsText.endsWith("Z")) {
+            tsText = tsText.substring(0, tsText.length() - 1);
+        }
+        try {
+            return AstNode.builder().type(AstNodeType.TIMESTAMP).value(LocalDateTime.parse(tsText, DateTimeFormatter.ISO_LOCAL_DATE_TIME)).build();
+        } catch (DateTimeParseException e) {
+            return AstNode.builder().type(AstNodeType.TIMESTAMP).value(LocalDateTime.parse(tsText, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))).build();
+        }
+    }
+
+    @Override
+    public AstNode visitTimeLiteral(IdemParser.TimeLiteralContext ctx) {
+        String timeText = ctx.TIME().getText();
+        DateTimeFormatter formatter = timeText.length() > 5 ? DateTimeFormatter.ISO_LOCAL_TIME : DateTimeFormatter.ofPattern("HH:mm");
+        return AstNode.builder().type(AstNodeType.TIME).value(LocalTime.parse(timeText, formatter)).build();
+    }
+
+    @Override
+    public AstNode visitTodayLiteral(IdemParser.TodayLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.TODAY).build();
+    }
+
+    @Override
+    public AstNode visitYesterdayLiteral(IdemParser.YesterdayLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.YESTERDAY).build();
+    }
+
+    @Override
+    public AstNode visitTomorrowLiteral(IdemParser.TomorrowLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.TOMORROW).build();
+    }
+
+    // --- Other Visitors ---
     @Override
     public AstNode visitSelfExpression(IdemParser.SelfExpressionContext ctx) {
         AstNode self = AstNode.builder().type(AstNodeType.SELF).build();
@@ -143,27 +222,29 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
 
     @Override
     public AstNode visitFunctionCallExpression(IdemParser.FunctionCallExpressionContext ctx) {
+        AstNode argNode = ctx.argumentList() != null ? visit(ctx.argumentList()) : null;
+        List<AstNode> args = argNode != null ? argNode.getChildren() : Collections.emptyList();
+
         return AstNode.builder()
                 .type(AstNodeType.FUNCTION_CALL)
                 .target(visit(ctx.expression()))
                 .name(ctx.Identifier().getText())
-                .arguments(ctx.argumentList() != null ? visit(ctx.argumentList()).getChildren() : Collections.emptyList())
+                .arguments(args)
                 .build();
     }
 
     @Override
     public AstNode visitArgumentList(IdemParser.ArgumentListContext ctx) {
+        List<AstNode> args = new ArrayList<>();
         if (ctx.iteratorArgument() != null) {
-            AstNode.AstNodeBuilder builder = AstNode.builder();
-            builder.child(visit(ctx.iteratorArgument()));
-            if (ctx.expression() != null) {
-                ctx.expression().forEach(expr -> builder.child(visit(expr)));
-            }
-            return builder.build();
+            args.add(visit(ctx.iteratorArgument()));
         }
-        return AstNode.builder()
-                .children(ctx.expression().stream().map(this::visit).collect(Collectors.toList()))
-                .build();
+        if (ctx.expression() != null) {
+            for (IdemParser.ExpressionContext exprCtx : ctx.expression()) {
+                args.add(visit(exprCtx));
+            }
+        }
+        return AstNode.builder().type(AstNodeType.ARGUMENT_LIST).children(args).build();
     }
 
     @Override
@@ -184,76 +265,8 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
                 .build();
     }
 
-    // Literals
-    @Override
-    public AstNode visitLiteralExpression(IdemParser.LiteralExpressionContext ctx) {
-        return visit(ctx.literal());
-    }
-
     @Override
     public AstNode visitIdentifierExpression(IdemParser.IdentifierExpressionContext ctx) {
         return AstNode.builder().type(AstNodeType.IDENTIFIER).name(ctx.getText()).build();
-    }
-
-    @Override
-    public AstNode visitNumericLiteral(IdemParser.NumericLiteralContext ctx) {
-        return AstNode.builder().type(AstNodeType.NUMBER).value(new BigDecimal(ctx.getText())).build();
-    }
-
-    @Override
-    public AstNode visitStringLiteral(IdemParser.StringLiteralContext ctx) {
-        String text = ctx.getText();
-        return AstNode.builder().type(AstNodeType.STRING).value(text.substring(1, text.length() - 1)).build();
-    }
-
-    @Override
-    public AstNode visitBooleanLiteral(IdemParser.BooleanLiteralContext ctx) {
-        return AstNode.builder().type(AstNodeType.BOOLEAN).value(Boolean.parseBoolean(ctx.getText())).build();
-    }
-
-    @Override
-    public AstNode visitNullLiteral(IdemParser.NullLiteralContext ctx) {
-        return AstNode.builder().type(AstNodeType.NULL).build();
-    }
-
-    @Override
-    public AstNode visitDateLiteral(IdemParser.DateLiteralContext ctx) {
-        String dateText = ctx.DATE().getText();
-        return AstNode.builder().type(AstNodeType.DATE).value(LocalDate.parse(dateText)).build();
-    }
-
-    @Override
-    public AstNode visitTimestampLiteral(IdemParser.TimestampLiteralContext ctx) {
-        String tsText = ctx.TIMESTAMP().getText();
-        if (tsText.endsWith("Z")) {
-            tsText = tsText.substring(0, tsText.length() - 1);
-        }
-        try {
-            return AstNode.builder().type(AstNodeType.TIMESTAMP).value(LocalDateTime.parse(tsText, DateTimeFormatter.ISO_LOCAL_DATE_TIME)).build();
-        } catch (DateTimeParseException e) {
-            return AstNode.builder().type(AstNodeType.TIMESTAMP).value(LocalDateTime.parse(tsText, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))).build();
-        }
-    }
-
-    @Override
-    public AstNode visitTimeLiteral(IdemParser.TimeLiteralContext ctx) {
-        String timeText = ctx.TIME().getText();
-        DateTimeFormatter formatter = timeText.length() > 5 ? DateTimeFormatter.ISO_LOCAL_TIME : DateTimeFormatter.ofPattern("HH:mm");
-        return AstNode.builder().type(AstNodeType.TIME).value(LocalTime.parse(timeText, formatter)).build();
-    }
-
-    @Override
-    public AstNode visitTodayLiteral(IdemParser.TodayLiteralContext ctx) {
-        return AstNode.builder().type(AstNodeType.TODAY).build();
-    }
-
-    @Override
-    public AstNode visitYesterdayLiteral(IdemParser.YesterdayLiteralContext ctx) {
-        return AstNode.builder().type(AstNodeType.YESTERDAY).build();
-    }
-
-    @Override
-    public AstNode visitTomorrowLiteral(IdemParser.TomorrowLiteralContext ctx) {
-        return AstNode.builder().type(AstNodeType.TOMORROW).build();
     }
 }

@@ -9,7 +9,7 @@ export const parse = (input: string): ParseContext => {
   const lexer = new IdemLexer(inputStream);
   const tokenStream = new CommonTokenStream(lexer);
   const parser = new IdemParser(tokenStream);
-  parser.buildParseTrees = true;
+  parser.buildParseTrees = true; // Ensure parse trees are built
   return parser.parse();
 };
 
