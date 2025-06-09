@@ -12,6 +12,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
 
@@ -235,25 +236,31 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
 
     @Override
     public AstNode visitArgumentList(IdemParser.ArgumentListContext ctx) {
-        List<AstNode> args = new ArrayList<>();
-        if (ctx.iteratorArgument() != null) {
-            args.add(visit(ctx.iteratorArgument()));
-        }
-        if (ctx.expression() != null) {
-            for (IdemParser.ExpressionContext exprCtx : ctx.expression()) {
-                args.add(visit(exprCtx));
-            }
-        }
+        List<AstNode> args = ctx.argument().stream()
+                .map(this::visit)
+                .collect(Collectors.toList());
         return AstNode.builder().type(AstNodeType.ARGUMENT_LIST).children(args).build();
     }
 
     @Override
+    public AstNode visitArgument(IdemParser.ArgumentContext ctx) {
+        return visit(ctx.getChild(0));
+    }
+
+    @Override
     public AstNode visitIteratorArgument(IdemParser.IteratorArgumentContext ctx) {
-        return AstNode.builder()
+        AstNode.AstNodeBuilder builder = AstNode.builder()
                 .type(AstNodeType.ITERATOR_ARGUMENT)
                 .iteratorVar(ctx.Identifier().getText())
-                .iteratorExpression(visit(ctx.expression()))
-                .build();
+                .iteratorExpression(visit(ctx.expression()));
+
+        if (ctx.sortDirection != null) {
+            builder.value(ctx.sortDirection.getText().toUpperCase());
+        } else {
+            builder.value("ASC");
+        }
+
+        return builder.build();
     }
 
     @Override

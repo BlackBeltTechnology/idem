@@ -21,12 +21,14 @@ public class AstNode {
     @Singular
     List<AstNode> children;
 
-    // For identifiers, function names, etc.
+    // For identifiers, function names, enum types etc.
     String name;
 
     // For iterator arguments (e.g., "p" in "p | p.name")
     String iteratorVar;
     AstNode iteratorExpression;
+    String direction; // For sort arguments (ASC/DESC)
+
 
     // For function calls
     AstNode target;

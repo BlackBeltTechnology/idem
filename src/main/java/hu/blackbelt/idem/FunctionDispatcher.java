@@ -123,25 +123,35 @@ public class FunctionDispatcher {
                     .orElse(null)),
             Map.entry("sort", (target, args, ctx) -> {
                 List<?> list = new java.util.ArrayList<>((Collection<?>) target);
-                Comparator<Object> comparator = (o1, o2) -> {
-                    int result = 0;
+
+                list.sort((o1, o2) -> {
                     for (AstNode sortClause : args) {
-                        if (result == 0) {
-                            EvalContext ctx1 = ctx.withSelf(Map.of(sortClause.getIteratorVar(), o1));
-                            EvalContext ctx2 = ctx.withSelf(Map.of(sortClause.getIteratorVar(), o2));
+                        // This is one sort criterion, e.g., "p | p.unitPrice DESC"
+                        EvalContext ctx1 = ctx.withSelf(Map.of(sortClause.getIteratorVar(), o1));
+                        EvalContext ctx2 = ctx.withSelf(Map.of(sortClause.getIteratorVar(), o2));
 
-                            Object val1 = evaluate(sortClause.getIteratorExpression(), ctx1);
-                            Object val2 = evaluate(sortClause.getIteratorExpression(), ctx2);
-                            result = compare(val1, val2);
+                        Object val1 = evaluate(sortClause.getIteratorExpression(), ctx1);
+                        Object val2 = evaluate(sortClause.getIteratorExpression(), ctx2);
 
-                            if (sortClause.getValue() != null && "DESC".equalsIgnoreCase(sortClause.getValue().toString())) {
-                                result = -result;
+                        int comparisonResult = compare(val1, val2);
+
+                        // If the values are not equal, we've found the order based on this criterion.
+                        if (comparisonResult != 0) {
+                            String direction = (String) sortClause.getValue();
+                            if ("DESC".equalsIgnoreCase(direction)) {
+                                // For DESC, reverse the natural comparison order.
+                                return -comparisonResult;
+                            } else {
+                                // For ASC, use the natural comparison order.
+                                return comparisonResult;
                             }
                         }
+                        // If comparisonResult is 0, the elements are equal on this criterion.
+                        // The loop will continue to the next criterion.
                     }
-                    return result;
-                };
-                list.sort(comparator);
+                    // If all criteria result in equality, the elements are considered equal.
+                    return 0;
+                });
                 return list;
             })
     );

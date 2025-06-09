@@ -23,8 +23,10 @@ public enum AstNodeType {
     TODAY,
     YESTERDAY,
     TOMORROW,
+    ENUM_LITERAL,
 
     // Internal
     ARGUMENT_LIST,
+    ARGUMENT,
     ITERATOR_ARGUMENT
 }

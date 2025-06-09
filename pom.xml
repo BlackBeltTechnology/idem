@@ -41,6 +41,8 @@
                             <arguments>
                                 <argument>-visitor</argument>
                                 <argument>-no-listener</argument>
+<!--                                <argument>-superclass</argument>-->
+<!--                                <argument>hu.blackbelt.idem.IdemBaseParser</argument>-->
                             </arguments>
                         </configuration>
                     </execution>

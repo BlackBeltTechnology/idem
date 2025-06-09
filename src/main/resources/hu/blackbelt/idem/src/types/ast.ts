@@ -1,43 +1,46 @@
 export type AstNodeType =
-  // Expressions
-  | 'Binary'
-  | 'Unary'
-  | 'Ternary'
-  | 'In'
-  | 'FunctionCall'
-  | 'Navigation'
-  | 'IndexAccess'
-  | 'Self'
-  | 'Identifier'
+    // Expressions
+    | 'Binary'
+    | 'Unary'
+    | 'Ternary'
+    | 'In'
+    | 'FunctionCall'
+    | 'Navigation'
+    | 'IndexAccess'
+    | 'Self'
+    | 'Identifier'
 
-  // Literals
-  | 'Number'
-  | 'String'
-  | 'Boolean'
-  | 'Null'
-  | 'Date'
-  | 'Timestamp'
-  | 'Time'
-  | 'Today'
-  | 'Yesterday'
-  | 'Tomorrow'
+    // Literals
+    | 'Number'
+    | 'String'
+    | 'Boolean'
+    | 'Null'
+    | 'EnumLiteral'
+    | 'Date'
+    | 'Timestamp'
+    | 'Time'
+    | 'Today'
+    | 'Yesterday'
+    | 'Tomorrow'
 
-  // Internal structures
-  | 'ArgumentList'
-  | 'IteratorArgument';
+    // Internal structures
+    | 'ArgumentList'
+    | 'Argument'
+    | 'IteratorArgument';
 
 export interface ASTNode {
-  type: AstNodeType;
-  value?: any;
-  operator?: string;
-  children?: ASTNode[];
-  name?: string; // identifier or function name
+    type: AstNodeType;
+    value?: any;
+    operator?: string;
+    children?: ASTNode[];
+    name?: string; // identifier or function name
 
-  // Function call specific
-  target?: ASTNode;
-  args?: ASTNode[];
+    // Function call specific
+    target?: ASTNode;
+    args?: ASTNode[];
 
-  // Iterator specific
-  iteratorVar?: string;
-  iteratorExpression?: ASTNode;
+    // Iterator specific
+    iteratorVar?: string;
+    iteratorExpression?: ASTNode;
+    direction?: 'ASC' | 'DESC' | string;
 }

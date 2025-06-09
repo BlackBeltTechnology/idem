@@ -96,14 +96,20 @@ public class IdemEvaluator {
         Object left = evaluate(node.getChildren().get(0), ctx);
         Object right = evaluate(node.getChildren().get(1), ctx);
 
-        // Undefined propagation for arithmetic
+        // Undefined propagation
+        if ("+".equals(node.getOperator())) {
+            if (left instanceof String || right instanceof String) {
+                if (left == null || right == null) return null;
+                return Objects.toString(left) + Objects.toString(right);
+            }
+        }
+
         if (!isLogical(node.getOperator())) {
             if (left == null || right == null) return null;
         }
 
         switch (node.getOperator()) {
             case "+":
-                if (left instanceof String || right instanceof String) return Objects.toString(left, "") + Objects.toString(right, "");
                 return toBigDecimal(left).add(toBigDecimal(right));
             case "-": return toBigDecimal(left).subtract(toBigDecimal(right));
             case "*": return toBigDecimal(left).multiply(toBigDecimal(right));
@@ -132,8 +138,14 @@ public class IdemEvaluator {
     }
 
     public static int compare(Object left, Object right) {
-        if (left == null || right == null) {
-            return left == right ? 0 : (left == null ? -1 : 1);
+        if (Objects.equals(left, right)) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
         }
         if (left instanceof String && right instanceof String) {
             return ((String) left).compareToIgnoreCase((String) right);
@@ -162,6 +174,7 @@ public class IdemEvaluator {
     public static boolean toBoolean(Object value) {
         if (value instanceof Boolean) return (Boolean) value;
         if (value == null) return false; // Undefined is false in logical contexts
+        if (value instanceof Number && ((Number) value).doubleValue() == 0) return false;
         return true; // Any other non-null, non-boolean value is truthy
     }
 }

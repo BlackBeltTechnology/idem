@@ -1,17 +1,8 @@
-export function parseLocalDate(isoDate: string): Date {
-  const parts = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!parts) {
-    throw new Error(`Invalid LocalDate format: ${isoDate}`);
-  }
-  const [, yearStr, monthStr, dayStr] = parts;
-  const year = Number(yearStr);
-  const month = Number(monthStr) - 1;
-  const day = Number(dayStr);
-
-  const date = new Date(year, month, day);
-  if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) {
-    throw new Error(`Invalid LocalDate value: ${isoDate}`);
-  }
-
-  return date;
+/**
+ * Parses a date string like 'YYYY-MM-DD' into a Date object at UTC midnight.
+ * This prevents timezone-related issues where '2023-10-25' could become
+ * '2023-10-24T23:00:00.000Z' in a negative UTC offset timezone.
+ */
+export function parseLocalDateAsUTC(isoDate: string): Date {
+    return new Date(`${isoDate}T00:00:00.000Z`);
 }

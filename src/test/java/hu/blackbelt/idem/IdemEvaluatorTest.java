@@ -9,6 +9,7 @@ import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +88,8 @@ public class IdemEvaluatorTest {
         assertEquals(0, new BigDecimal("-0.5").compareTo((BigDecimal) evaluate("self.a - self.b")));
         assertEquals(0, new BigDecimal("3.0").compareTo((BigDecimal) evaluate("self.a * self.b")));
         assertEquals(new BigDecimal("8"), evaluate("2^3"));
-        assertNull(evaluate("self.a + null"));
+        assertNull(evaluate("self.a + self.maybeNull"));
+        assertNull(evaluate("'hello' + self.maybeNull"));
     }
 
     @Test
@@ -133,6 +135,7 @@ public class IdemEvaluatorTest {
     void testInOperator() {
         assertEquals(true, evaluate("2 in self.items"));
         assertEquals(false, evaluate("4 in self.items"));
+        assertNull(evaluate("self.maybeNull in self.items"));
     }
 
     @Test
@@ -188,10 +191,15 @@ public class IdemEvaluatorTest {
         assertEquals(new BigDecimal("9.8"), evaluate("self.orderDetails!min(od | od.unitPrice)"));
         assertEquals(new BigDecimal("34.8"), evaluate("self.orderDetails!max(od | od.unitPrice)"));
         assertEquals("Chai, Chang, Aniseed Syrup", evaluate("self.products!join(p | p.productName, ', ')"));
-        assertEquals(1, ((List<?>)evaluate("self.orderDetails!filter(od | od.unitPrice < 10)")).size());
+        assertEquals(1, ((List<?>) evaluate("self.orderDetails!filter(od | od.unitPrice < 10)")).size());
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> sorted = (List<Map<String, Object>>) evaluate("self.products!sort(p | p.unitPrice)");
         assertEquals(new BigDecimal("10"), sorted.get(0).get("unitPrice"));
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> sortedDesc = (List<Map<String, Object>>) evaluate("self.products!sort(p | p.unitPrice DESC)");
+        assertEquals(new BigDecimal("19"), sortedDesc.get(0).get("unitPrice"));
+        assertEquals(new BigDecimal("10"), sortedDesc.get(2).get("unitPrice"));
     }
 }
