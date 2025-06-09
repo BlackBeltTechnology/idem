@@ -284,6 +284,24 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
     }
 
     @Override
+    public AstNode visitDivExpression(IdemParser.DivExpressionContext ctx) {
+        return AstNode.builder()
+                .type(AstNodeType.Div)
+                .left(this.visitNode(ctx.expression(0)))
+                .right(this.visitNode(ctx.expression(1)))
+                .build();
+    }
+
+    @Override
+    public AstNode visitModExpression(IdemParser.ModExpressionContext ctx) {
+        return AstNode.builder()
+                .type(AstNodeType.Mod)
+                .left(this.visitNode(ctx.expression(0)))
+                .right(this.visitNode(ctx.expression(1)))
+                .build();
+    }
+
+    @Override
     public AstNode visitAddExpression(IdemParser.AddExpressionContext ctx) {
         return AstNode.builder()
                 .type(AstNodeType.Add)

@@ -1,1 +1,2 @@
 gitignore_parser==0.1.12
+google_generativeai==0.8.5

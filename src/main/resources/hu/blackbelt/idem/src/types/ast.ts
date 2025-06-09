@@ -25,6 +25,8 @@ export type AstNodeType =
   | 'And'
   | 'Or'
   | 'Xor'
+  | 'Div'
+  | 'Mod'
   | 'Not'
   | 'UnaryMinus'
   | 'Eq'

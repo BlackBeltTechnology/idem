@@ -5,6 +5,7 @@ import type {
   AndExpressionContext,
   BoolExpressionContext,
   DivideExpressionContext,
+  DivExpressionContext,
   EqExpressionContext,
   ExprListContext,
   ExpressionContext,
@@ -22,6 +23,7 @@ import type {
   LtExpressionContext,
   ModulusExpressionContext,
   MultiplyExpressionContext,
+  ModExpressionContext,
   NotEqExpressionContext,
   NotExpressionContext,
   NullExpressionContext,
@@ -133,6 +135,20 @@ export class Visitor extends IdemVisitor<ASTNode> {
     left: this.visit(ctx.expression(0) as ExpressionContext),
     right: this.visit(ctx.expression(1) as ExpressionContext),
   });
+
+  visitDivExpression = (ctx: DivExpressionContext): ASTNode => ({
+    type: 'Div',
+    left: this.visit(ctx.expression(0) as ExpressionContext),
+    right: this.visit(ctx.expression(1) as ExpressionContext),
+  });
+
+  visitModExpression = (ctx: ModExpressionContext): ASTNode => ({
+    type: 'Mod',
+    left: this.visit(ctx.expression(0) as ExpressionContext),
+    right: this.visit(ctx.expression(1) as ExpressionContext),
+  });
+
+
 
   visitAddExpression = (ctx: AddExpressionContext): ASTNode => ({
     type: 'Add',

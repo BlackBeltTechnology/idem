@@ -57,6 +57,15 @@ describe('evaluate', () => {
     expect(evaluate(expressionToAst('2^3'), ctx)).toBe(8);
   });
 
+  it('handles div mod', () => {
+    expect(evalExpr('5 div 2')).toBe(2);
+    expect(evalExpr('5 div 2.5')).toBe(2);
+    expect(evalExpr('5.5 div 2')).toBe(2);
+    expect(evalExpr('5 mod 2')).toBe(1);
+    expect(evalExpr('5 mod 2.5')).toBe(0);
+    expect(evalExpr('5.5 mod 2')).toBe(1);
+  });
+
   it('handles > >= < <= == !=', () => {
     expect(evaluate(expressionToAst('3>2'), ctx)).toBe(true);
     expect(evaluate(expressionToAst('3>=3'), ctx)).toBe(true);

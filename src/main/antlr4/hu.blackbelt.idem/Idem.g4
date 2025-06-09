@@ -14,6 +14,8 @@ expression
   | expression Multiply expression            #multiplyExpression
   | expression Divide expression              #divideExpression
   | expression Modulus expression             #modulusExpression
+  | expression Div expression                 #divExpression
+  | expression Mod expression                 #modExpression
   | expression Add expression                 #addExpression
   | expression Subtract expression            #subtractExpression
   | expression Add DatePart                   #addDatePartExpression
@@ -97,6 +99,8 @@ Subtract  : '-';
 Multiply  : '*';
 Divide    : '/';
 Modulus   : '%';
+Div       : 'div';
+Mod       : 'mod';
 OBracket  : '[';
 CBracket  : ']';
 OParen    : '(';
@@ -152,4 +156,4 @@ fragment Int
 
 fragment Digit
   : [0-9]
-  ;
+;

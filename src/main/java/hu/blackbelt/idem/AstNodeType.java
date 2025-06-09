@@ -24,6 +24,8 @@ public enum AstNodeType {
     Modulus,
     Power,
     And,
+    Div,
+    Mod,
     Or,
     Xor,
     Not,

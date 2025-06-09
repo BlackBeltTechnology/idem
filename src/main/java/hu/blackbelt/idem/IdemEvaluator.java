@@ -80,6 +80,14 @@ public class IdemEvaluator {
                 return toBigDecimal(evaluate(node.getLeft(), ctx)).multiply(toBigDecimal(evaluate(node.getRight(), ctx)));
             case Divide:
                 return toBigDecimal(evaluate(node.getLeft(), ctx)).divide(toBigDecimal(evaluate(node.getRight(), ctx)), 10, RoundingMode.HALF_UP);
+            case Div:
+                BigDecimal leftDiv = toBigDecimal(evaluate(node.getLeft(), ctx));
+                BigDecimal rightDiv = toBigDecimal(evaluate(node.getRight(), ctx));
+                return leftDiv.divideToIntegralValue(rightDiv);
+            case Mod:
+                BigDecimal leftMod = toBigDecimal(evaluate(node.getLeft(), ctx));
+                BigDecimal rightMod = toBigDecimal(evaluate(node.getRight(), ctx));
+                return leftMod.remainder(rightMod);
             case Modulus:
                 return toBigDecimal(evaluate(node.getLeft(), ctx)).remainder(toBigDecimal(evaluate(node.getRight(), ctx)));
             case Power:

@@ -56,6 +56,10 @@ export function evaluate(node: ASTNode, ctx?: EvalContext): any {
       return evaluate(node.left, ctx) % evaluate(node.right, ctx);
     case 'Power':
       return evaluate(node.left, ctx) ** evaluate(node.right, ctx);
+    case 'Div':
+      return Math.floor(evaluate(node.left, ctx) / evaluate(node.right, ctx));
+    case 'Mod':
+      return Math.floor(evaluate(node.left, ctx) % evaluate(node.right, ctx));
     case 'And':
       return !!evaluate(node.left, ctx) && evaluate(node.right, ctx);
     case 'Or':
