@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,7 +39,18 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
     @Override
     public AstNode visitStringLiteralAlt(IdemParser.StringLiteralAltContext ctx) {
         String text = ctx.getText();
-        return AstNode.builder().type(AstNodeType.STRING).value(text.substring(1, text.length() - 1)).build();
+        String unquoted = text.substring(1, text.length() - 1);
+        // Unescape standard characters to match behavior of other languages
+        String unescaped = unquoted
+                .replace("\\'", "'")
+                .replace("\\\"", "\"")
+                .replace("\\t", "\t")
+                .replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\b", "\b")
+                .replace("\\f", "\f")
+                .replace("\\\\", "\\");
+        return AstNode.builder().type(AstNodeType.STRING).value(unescaped).build();
     }
 
     @Override
@@ -61,6 +71,16 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
     @Override
     public AstNode visitTemporalLiteralAlt(IdemParser.TemporalLiteralAltContext ctx) {
         return visit(ctx.temporalLiteral());
+    }
+
+    @Override
+    public AstNode visitEnumLiteralAlt(IdemParser.EnumLiteralAltContext ctx) {
+        return visit(ctx.enumLiteral());
+    }
+
+    @Override
+    public AstNode visitEnumLiteral(IdemParser.EnumLiteralContext ctx) {
+        return AstNode.builder().type(AstNodeType.ENUM_LITERAL).value(ctx.getText()).build();
     }
 
     @Override
@@ -214,11 +234,7 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
 
     @Override
     public AstNode visitInExpression(IdemParser.InExpressionContext ctx) {
-        return AstNode.builder()
-                .type(AstNodeType.IN_EXPRESSION)
-                .child(visit(ctx.expression(0)))
-                .child(visit(ctx.expression(1)))
-                .build();
+        return buildBinary(ctx.expression(0), ctx.getChild(1), ctx.expression(1));
     }
 
     @Override
@@ -255,9 +271,9 @@ public class IdemDefaultVisitor extends IdemBaseVisitor<AstNode> {
                 .iteratorExpression(visit(ctx.expression()));
 
         if (ctx.sortDirection != null) {
-            builder.value(ctx.sortDirection.getText().toUpperCase());
+            builder.direction(ctx.sortDirection.getText().toUpperCase());
         } else {
-            builder.value("ASC");
+            builder.direction("ASC");
         }
 
         return builder.build();

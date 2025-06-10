@@ -24,6 +24,18 @@ class ParserTest {
     }
 
     @Test
+    @DisplayName("parses enum literals")
+    void testEnumLiterals() {
+        AstNode simpleEnum = parse("Days#MONDAY");
+        assertEquals(AstNodeType.ENUM_LITERAL, simpleEnum.getType());
+        assertEquals("Days#MONDAY", simpleEnum.getValue());
+
+        AstNode qualifiedEnum = parse("model::time::Days#MONDAY");
+        assertEquals(AstNodeType.ENUM_LITERAL, qualifiedEnum.getType());
+        assertEquals("model::time::Days#MONDAY", qualifiedEnum.getValue());
+    }
+
+    @Test
     @DisplayName("parses self expression with navigation")
     void selfExpressionWithTags() {
         AstNode ast = parse("self.foo.bar");
@@ -105,4 +117,14 @@ class ParserTest {
         assertEquals(AstNodeType.BINARY_EXPRESSION, iteratorArg.getIteratorExpression().getType());
     }
 
+    @Test
+    @DisplayName("parses sort function with direction")
+    void sortFunctionWithDirection() {
+        AstNode ast = parse("self.items!sort(p | p.price DESC)");
+        AstNode iteratorArg = ast.getArguments().get(0);
+
+        assertEquals(AstNodeType.ITERATOR_ARGUMENT, iteratorArg.getType());
+        assertEquals("p", iteratorArg.getIteratorVar());
+        assertEquals("DESC", iteratorArg.getDirection());
+    }
 }

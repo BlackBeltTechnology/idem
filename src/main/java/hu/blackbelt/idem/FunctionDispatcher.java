@@ -137,7 +137,7 @@ public class FunctionDispatcher {
 
                         // If the values are not equal, we've found the order based on this criterion.
                         if (comparisonResult != 0) {
-                            String direction = (String) sortClause.getValue();
+                            String direction = sortClause.getDirection();
                             if ("DESC".equalsIgnoreCase(direction)) {
                                 // For DESC, reverse the natural comparison order.
                                 return -comparisonResult;
@@ -159,13 +159,13 @@ public class FunctionDispatcher {
     private static Stream<?> getStream(Object target, List<AstNode> args, EvalContext ctx) {
         Collection<?> collection = (Collection<?>) target;
         if (args.isEmpty()) {
-            return collection.stream();
+            return collection.stream().filter(Objects::nonNull);
         }
         AstNode iterator = args.get(0);
         return collection.stream().map(item -> {
             EvalContext itemCtx = ctx.withSelf(Map.of(iterator.getIteratorVar(), item));
             return evaluate(iterator.getIteratorExpression(), itemCtx);
-        });
+        }).filter(Objects::nonNull);
     }
 
     public static Object dispatch(String functionName, Object target, List<AstNode> args, EvalContext ctx) {

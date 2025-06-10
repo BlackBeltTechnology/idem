@@ -17,4 +17,7 @@ export default defineConfig(({ mode }) => ({
             formats: ['es', 'cjs', 'umd'],
         },
     },
+    test: {
+        // configuration for vitest
+    }
 }));

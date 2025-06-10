@@ -5,11 +5,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,21 +33,24 @@ public class IdemEvaluatorTest {
         ));
         selfMap.put("str", "hello");
         selfMap.put("items", List.of(new BigDecimal("1"), new BigDecimal("2"), new BigDecimal("3")));
-        selfMap.put("startDate", LocalDate.parse("2025-06-15"));
+        selfMap.put("itemsForAvg", List.of(new BigDecimal("1"), new BigDecimal("2"), new BigDecimal("4"))); // avg = 7/3
+        selfMap.put("startDate", LocalDate.now());
         selfMap.put("name", "Idem Language");
         selfMap.put("maybeNull", null);
 
         selfMap.put("products", List.of(
-                Map.of("productId", 1, "productName", "Chai", "unitPrice", new BigDecimal("18"), "discontinued", false),
-                Map.of("productId", 2, "productName", "Chang", "unitPrice", new BigDecimal("19"), "discontinued", true),
-                Map.of("productId", 3, "productName", "Aniseed Syrup", "unitPrice", new BigDecimal("10"), "discontinued", false)
+                Map.of("productId", 1, "productName", "Chai", "unitPrice", new BigDecimal("18.00"), "discontinued", false),
+                Map.of("productId", 2, "productName", "Chang", "unitPrice", new BigDecimal("19.00"), "discontinued", true),
+                Map.of("productId", 3, "productName", "Aniseed Syrup", "unitPrice", new BigDecimal("10.00"), "discontinued", false)
         ));
 
         selfMap.put("orderDetails", List.of(
-                Map.of("orderId", 10248, "productId", 11, "unitPrice", new BigDecimal("14.0"), "quantity", new BigDecimal(12), "discount", 0),
-                Map.of("orderId", 10248, "productId", 42, "unitPrice", new BigDecimal("9.8"), "quantity", new BigDecimal(10), "discount", 0),
-                Map.of("orderId", 10249, "productId", 72, "unitPrice", new BigDecimal("34.8"), "quantity", new BigDecimal(5), "discount", 0)
+                Map.of("orderId", 10248, "productId", 11, "unitPrice", new BigDecimal("14.00"), "quantity", new BigDecimal(12), "discount", 0),
+                Map.of("orderId", 10248, "productId", 42, "unitPrice", new BigDecimal("9.80"), "quantity", new BigDecimal(10), "discount", 0),
+                Map.of("orderId", 10249, "productId", 72, "unitPrice", new BigDecimal("34.80"), "quantity", new BigDecimal(5), "discount", 0)
         ));
+
+        selfMap.put("strings", List.of("c", "a", "b"));
 
         ctx = EvalContext.builder().self(selfMap).build();
     }
@@ -76,6 +77,12 @@ public class IdemEvaluatorTest {
     }
 
     @Test
+    void testEnumLiteral() {
+        assertEquals("MyEnum#VALUE", evaluate("MyEnum#VALUE"));
+        assertEquals("ns::MyEnum#VALUE", evaluate("ns::MyEnum#VALUE"));
+    }
+
+    @Test
     void testSelfProperties() {
         assertEquals(new BigDecimal("1.5"), evaluate("self.a"));
         assertEquals(new BigDecimal("42"), evaluate("self.nested.x"));
@@ -86,7 +93,8 @@ public class IdemEvaluatorTest {
     void testArithmetic() {
         assertEquals(0, new BigDecimal("3.5").compareTo((BigDecimal) evaluate("self.a + self.b")));
         assertEquals(0, new BigDecimal("-0.5").compareTo((BigDecimal) evaluate("self.a - self.b")));
-        assertEquals(0, new BigDecimal("3.0").compareTo((BigDecimal) evaluate("self.a * self.b")));
+        assertEquals(0, new BigDecimal("3.00").compareTo(((BigDecimal) evaluate("self.a * self.b")).setScale(2, RoundingMode.HALF_UP)));
+        assertEquals(0, new BigDecimal("0.75").compareTo(((BigDecimal) evaluate("self.a / self.b")).setScale(2, RoundingMode.HALF_UP)));
         assertEquals(new BigDecimal("8"), evaluate("2^3"));
         assertNull(evaluate("self.a + self.maybeNull"));
         assertNull(evaluate("'hello' + self.maybeNull"));
@@ -94,10 +102,10 @@ public class IdemEvaluatorTest {
 
     @Test
     void testDivMod() {
-        assertEquals(new BigInteger("2"), evaluate("5 div 2"));
-        assertEquals(new BigInteger("2"), evaluate("5.5 div 2"));
-        assertEquals(new BigInteger("1"), evaluate("5 mod 2"));
-        assertEquals(new BigInteger("1"), evaluate("5.5 mod 2.9"));
+        assertEquals(new BigDecimal("2"), evaluate("5 div 2"));
+        assertEquals(new BigDecimal("2"), evaluate("5.5 div 2"));
+        assertEquals(new BigDecimal("1"), evaluate("5 mod 2"));
+        assertEquals(new BigDecimal("1"), evaluate("5.5 mod 2.9"));
     }
 
     @Test
@@ -123,6 +131,7 @@ public class IdemEvaluatorTest {
         assertEquals(true, evaluate("self.flag or true"));
         assertEquals(false, evaluate("true implies false"));
         assertEquals(true, evaluate("true xor false"));
+        assertEquals(true, evaluate("not self.maybeNull"));
     }
 
     @Test
@@ -143,6 +152,7 @@ public class IdemEvaluatorTest {
         assertEquals(new BigDecimal("2"), evaluate("self.items[1]"));
         assertEquals("e", evaluate("self.str[1]"));
         assertEquals(new BigDecimal("3"), evaluate("self.matrix[1][0]"));
+        assertNull(evaluate("self.items[99]")); // Out of bounds
     }
 
     @Test
@@ -157,12 +167,21 @@ public class IdemEvaluatorTest {
         assertEquals("IDEM LANGUAGE", evaluate("self.name!upperCase()"));
         assertEquals(new BigDecimal(13), evaluate("self.name!length()"));
         assertEquals("ell", evaluate("'hello'!substring(1, 3)"));
+        assertEquals("hello", evaluate("' hello '!trim()"));
+        assertEquals("he", evaluate("'hello'!first(2)"));
+        assertEquals("lo", evaluate("'hello'!last(2)"));
+        assertEquals(new BigDecimal(6), evaluate("'hello world'!position('world')"));
+        assertEquals(true, evaluate("'abc-123'!matches('[a-z]+-\\d+')"));
+        assertEquals("a-b-c", evaluate("'a b c'!replace(' ', '-')"));
     }
 
     @Test
     void testNumericFunctions() {
         assertEquals(new BigDecimal("1.23"), evaluate("1.2345!round(2)"));
+        assertEquals(new BigDecimal("1.24"), evaluate("1.2355!round(2)"));
         assertEquals(new BigDecimal("2"), evaluate("self.a!round()"));
+        assertEquals(new BigDecimal("-2"), evaluate("-1.5!round()"));
+        assertEquals(new BigDecimal("-1"), evaluate("-1.4!round()"));
     }
 
     @Test
@@ -182,24 +201,65 @@ public class IdemEvaluatorTest {
         assertEquals(0, new BigDecimal("2.0000000000").compareTo((BigDecimal) evaluate("self.items!avg()")));
         assertEquals(new BigDecimal(1), evaluate("self.items!min()"));
         assertEquals(new BigDecimal(3), evaluate("self.items!max()"));
+        assertEquals("a", evaluate("self.strings!min()"));
+        assertEquals("c", evaluate("self.strings!max()"));
     }
 
     @Test
     void testIteratorFunctions() {
-        assertEquals(new BigDecimal("27"), evaluate("self.orderDetails!sum(od | od.quantity)"));
-        assertEquals(0, new BigDecimal("9.0000000000").compareTo((BigDecimal) evaluate("self.orderDetails!avg(od | od.quantity)")));
-        assertEquals(new BigDecimal("9.8"), evaluate("self.orderDetails!min(od | od.unitPrice)"));
-        assertEquals(new BigDecimal("34.8"), evaluate("self.orderDetails!max(od | od.unitPrice)"));
+        assertEquals(0, new BigDecimal("27").compareTo((BigDecimal) evaluate("self.orderDetails!sum(od | od.quantity)")));
+        assertEquals(new BigDecimal("9.80"), evaluate("self.orderDetails!min(od | od.unitPrice)"));
+        assertEquals(new BigDecimal("34.80"), evaluate("self.orderDetails!max(od | od.unitPrice)"));
         assertEquals("Chai, Chang, Aniseed Syrup", evaluate("self.products!join(p | p.productName, ', ')"));
         assertEquals(1, ((List<?>) evaluate("self.orderDetails!filter(od | od.unitPrice < 10)")).size());
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> sorted = (List<Map<String, Object>>) evaluate("self.products!sort(p | p.unitPrice)");
-        assertEquals(new BigDecimal("10"), sorted.get(0).get("unitPrice"));
+        assertEquals(new BigDecimal("10.00"), sorted.get(0).get("unitPrice"));
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> sortedDesc = (List<Map<String, Object>>) evaluate("self.products!sort(p | p.unitPrice DESC)");
-        assertEquals(new BigDecimal("19"), sortedDesc.get(0).get("unitPrice"));
-        assertEquals(new BigDecimal("10"), sortedDesc.get(2).get("unitPrice"));
+        assertEquals(new BigDecimal("19.00"), sortedDesc.get(0).get("unitPrice"));
+        assertEquals(new BigDecimal("10.00"), sortedDesc.get(2).get("unitPrice"));
+    }
+
+    @Test
+    void testIteratorFunctionsAvgRounding() {
+        // 7/3 = 2.3333333333
+        BigDecimal expected = new BigDecimal("2.3333333333");
+        BigDecimal actual = (BigDecimal) evaluate("self.itemsForAvg!avg()");
+        assertEquals(0, expected.compareTo(actual));
+    }
+
+    @Test
+    void testJoinWithNulls() {
+        Map<String, Object> selfMapWithNulls = new HashMap<>(ctx.getSelf());
+
+        Map<String, Object> product1 = Map.of("productName", "Chai");
+        Map<String, Object> product2 = new HashMap<>();
+        product2.put("productName", null);
+        Map<String, Object> product3 = Map.of("productName", "Aniseed Syrup");
+        List<Map<String, Object>> productList = new ArrayList<>();
+        productList.add(product1);
+        productList.add(product2);
+        productList.add(product3);
+
+        selfMapWithNulls.put("productsWithNulls", productList);
+
+        EvalContext ctxWithNulls = EvalContext.builder().self(selfMapWithNulls).build();
+        assertEquals("Chai,null,Aniseed Syrup", IdemEvaluator.evaluate(Parse.expressionToAst("self.productsWithNulls!join(p | p.productName, ',')"), ctxWithNulls));
+    }
+
+    @Test
+    void testChainedIteratorFunctions() {
+        String expr = "self.products!filter(p | p.unitPrice > 10)!sort(p | p.productName DESC)";
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> result = (List<Map<String, Object>>) evaluate(expr);
+
+        // Products with price > 10 are Chai (18) and Chang (19).
+        // Sorted by productName DESC, 'Chang' comes before 'Chai'.
+        assertEquals(2, result.size());
+        assertEquals("Chang", result.get(0).get("productName"));
+        assertEquals("Chai", result.get(1).get("productName"));
     }
 }

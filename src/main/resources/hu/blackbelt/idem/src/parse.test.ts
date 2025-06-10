@@ -5,10 +5,11 @@ describe('Expression → AST Parser', () => {
     it('should parse literals correctly', () => {
         expect(expressionToAst('true')).toMatchObject({ type: 'Boolean', value: true });
         expect(expressionToAst('null')).toMatchObject({ type: 'Null' });
-        expect(expressionToAst('123.45')).toMatchObject({ type: 'Number', value: 123.45 });
+        expect(expressionToAst('123.45')).toMatchObject({ type: 'Number', value: '123.45' });
         expect(expressionToAst("'hello'")).toMatchObject({ type: 'String', value: 'hello' });
-        expect(expressionToAst('`2025-01-10`')).toMatchObject({ type: 'Date' });
-        expect(expressionToAst('#MyEnum#MyValue')).toMatchObject({ type: 'EnumLiteral', value: '#MyEnum#MyValue'});
+        expect(expressionToAst('`2025-01-10`')).toMatchObject({ type: 'Date', value: '2025-01-10' });
+        expect(expressionToAst('MyEnum#MyValue')).toMatchObject({ type: 'EnumLiteral', value: 'MyEnum#MyValue'});
+        expect(expressionToAst('model::Days#MONDAY')).toMatchObject({ type: 'EnumLiteral', value: 'model::Days#MONDAY'});
     });
 
     it('should parse self and navigation expressions', () => {
@@ -29,7 +30,7 @@ describe('Expression → AST Parser', () => {
         expect(ast).toMatchObject({
             type: 'Unary',
             operator: '-',
-            children: [{ type: 'Number', value: 42 }],
+            children: [{ type: 'Number', value: '42' }],
         });
     });
 
@@ -39,11 +40,11 @@ describe('Expression → AST Parser', () => {
             type: 'Binary',
             operator: '+',
             children: [
-                { type: 'Number', value: 1 },
+                { type: 'Number', value: '1' },
                 {
                     type: 'Binary',
                     operator: '*',
-                    children: [{ type: 'Number', value: 2 }, { type: 'Number', value: 3 }],
+                    children: [{ type: 'Number', value: '2' }, { type: 'Number', value: '3' }],
                 },
             ],
         });
@@ -58,9 +59,9 @@ describe('Expression → AST Parser', () => {
                 {
                     type: 'Binary',
                     operator: '+',
-                    children: [{ type: 'Number', value: 1 }, { type: 'Number', value: 2 }],
+                    children: [{ type: 'Number', value: '1' }, { type: 'Number', value: '2' }],
                 },
-                { type: 'Number', value: 3 },
+                { type: 'Number', value: '3' },
             ],
         });
     });
@@ -70,8 +71,8 @@ describe('Expression → AST Parser', () => {
         expect(ast).toMatchObject({
             type: 'IndexAccess',
             children: [
-                { type: 'Navigation', name: 'items' },
-                { type: 'Number', value: 0 },
+                { type: 'Navigation', name: 'items', target: { type: 'Self' } },
+                { type: 'Number', value: '0' },
             ],
         });
     });
@@ -93,8 +94,8 @@ describe('Expression → AST Parser', () => {
             name: 'substring',
             target: { type: 'String', value: 'hello' },
             args: [
-                { type: 'Number', value: 1 },
-                { type: 'Number', value: 4 },
+                { type: 'Number', value: '1' },
+                { type: 'Number', value: '4' },
             ],
         });
     });
@@ -113,7 +114,7 @@ describe('Expression → AST Parser', () => {
                     operator: '>',
                     children: [
                         { type: 'Identifier', name: 'i' },
-                        { type: 'Number', value: 1 },
+                        { type: 'Number', value: '1' },
                     ],
                 },
             }],

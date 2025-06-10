@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "generate:antlr": "antlr-ng -Dlanguage=TypeScript -v -o src/generated ../../../../antlr4/hu.blackbelt.idem/Idem.g4",
+    "generate:antlr": "antlr-ng -Dlanguage=TypeScript -v -o src/generated Idem.g4",
     "test:dev": "vitest",
     "test": "vitest run",
     "coverage": "vitest run --coverage",

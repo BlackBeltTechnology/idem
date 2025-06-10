@@ -1,22 +1,6 @@
 
 grammar Idem;
 
-@parser::members {
-  /**
-   * A semantic predicate function used in the grammar to resolve ambiguity
-   * between an iteratorArgument and a regular expression.
-   * This is injected directly into the generated parser, avoiding the need for a superclass.
-   * @return true if the token following an Identifier is a '|', false otherwise.
-   */
-  public boolean isIterator() {
-    org.antlr.v4.runtime.Token nextToken = _input.LT(2);
-    if (nextToken == null) {
-        return false;
-    }
-    return "|".equals(nextToken.getText());
-  }
-}
-
 parse
   : expression
   ;

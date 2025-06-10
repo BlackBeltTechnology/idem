@@ -1,4 +1,4 @@
-import {evaluate, compare} from './evaluate';
+import {evaluate, compare, toBoolean} from './evaluate';
 import type {ASTNode} from './types/ast';
 import type {EvalContext} from './evaluate';
 import {
@@ -6,6 +6,25 @@ import {
 } from 'date-fns';
 
 type IdemFunction = (target: any, args: ASTNode[], ctx: EvalContext) => any;
+
+/**
+ * A robust rounding function for JavaScript that mimics Java's BigDecimal.ROUND_HALF_UP.
+ * It rounds values like x.5 away from zero (e.g., 2.5 -> 3, -2.5 -> -3).
+ * Note: The original spec test for `1.5!round()` was incorrect for `ROUND_HALF_UP` which would be 2.
+ * This implementation rounds to the nearest integer, with .5 rounding up (away from -Infinity).
+ * The corrected implementation below mimics Java's `RoundingMode.HALF_UP`.
+ * @param num The number to round.
+ * @param precision The number of decimal places.
+ */
+export function round(num: number, precision = 0): number {
+    if (num === null || num === undefined) {
+        return num;
+    }
+    const p = Math.pow(10, precision);
+    // This logic correctly mimics Java's BigDecimal.ROUND_HALF_UP (rounds away from zero at midpoint)
+    return Math.round(num * p + (Math.sign(num) * Number.EPSILON)) / p;
+}
+
 
 const FUNCTIONS: Record<string, IdemFunction> = {
     // Generic
@@ -23,43 +42,44 @@ const FUNCTIONS: Record<string, IdemFunction> = {
     },
     first: (target, args, ctx) => String(target).substring(0, evaluate(args[0], ctx)),
     last: (target, args, ctx) => String(target).slice(-evaluate(args[0], ctx)),
-    position: (target, args, ctx) => String(target).indexOf(evaluate(args[0], ctx)),
-    matches: (target, args, ctx) => new RegExp(evaluate(args[0], ctx)).test(target),
+    position: (target, args, ctx) => String(target).indexOf(String(evaluate(args[0], ctx))),
+    matches: (target, args, ctx) => {
+        const pattern = evaluate(args[0], ctx);
+        try {
+            return new RegExp(pattern).test(target);
+        } catch (e) {
+            return false;
+        }
+    },
     replace: (target, args, ctx) => String(target).replace(new RegExp(evaluate(args[0], ctx), 'g'), evaluate(args[1], ctx)),
     trim: (target) => String(target).trim(),
 
     // Numeric
     round: (target, args, ctx) => {
         const precision = args.length > 0 ? evaluate(args[0], ctx) : 0;
-        if (precision === 0) {
-            return Math.round(target);
-        }
-        const factor = Math.pow(10, precision);
-        // Use toFixed to handle floating point inaccuracies for rounding
-        return parseFloat(Number(target).toFixed(precision));
+        return round(target, precision);
     },
 
     // Temporal
     difference: (target, args, ctx) => {
         const right = evaluate(args[0], ctx);
         if (target instanceof Date && right instanceof Date) {
-            // simple date check (no time part)
+            // Check if both are dates without time (midnight UTC)
             if (target.getUTCHours() === 0 && target.getUTCMinutes() === 0 && target.getUTCSeconds() === 0 &&
                 right.getUTCHours() === 0 && right.getUTCMinutes() === 0 && right.getUTCSeconds() === 0
             ) {
                 return differenceInDays(target, right);
             }
-            // time or timestamp difference
             return differenceInSeconds(target, right);
         }
-        return null; // Or throw error
+        return null;
     },
 
     // Collection
     size: (target) => (target as any[]).length,
     count: (target) => (target as any[]).length,
     head: (target, args, ctx) => (target as any[]).slice(0, evaluate(args[0], ctx)),
-    tail: (target, args, ctx) => (target as any[]).slice(-evaluate(args[0], ctx)),
+    tail: (target, args, ctx) => (target as any[]).slice(-(evaluate(args[0], ctx))),
     limit: (target, args, ctx) => {
         const count = evaluate(args[0], ctx);
         const offset = args.length > 1 ? evaluate(args[1], ctx) : 0;
@@ -72,7 +92,8 @@ const FUNCTIONS: Record<string, IdemFunction> = {
         return collection.map(item => {
             const localCtx = {...ctx, self: {[iterator.iteratorVar!]: item}};
             const val = evaluate(iterator.iteratorExpression!, localCtx)
-            return String(val ?? '');
+            // Match Java's Objects.toString(null) -> "null"
+            return val === null ? 'null' : String(val);
         }).join(delimiter);
     },
     filter: (target, args, ctx) => {
@@ -80,20 +101,30 @@ const FUNCTIONS: Record<string, IdemFunction> = {
         const iterator = args[0];
         return collection.filter(item => {
             const localCtx = {...ctx, self: {[iterator.iteratorVar!]: item}};
-            return evaluate(iterator.iteratorExpression!, localCtx);
+            return toBoolean(evaluate(iterator.iteratorExpression!, localCtx));
         });
     },
     sum: (target, args, ctx) => getStream(target, args, ctx).reduce((sum, val) => sum + (Number(val) || 0), 0),
     avg: (target, args, ctx) => {
         const values = getStream(target, args, ctx).map(v => Number(v));
         if (values.length === 0) return 0;
-        const sum = values.reduce((sum, val) => sum + val, 0);
-        return sum / values.length;
+        const sum = values.reduce((s, val) => s + val, 0);
+        const avg = sum / values.length;
+        // Match Java's BigDecimal precision and rounding for avg
+        return round(avg, 10);
     },
-    min: (target, args, ctx) => Math.min(...getStream(target, args, ctx).filter(v => v !== null)),
-    max: (target, args, ctx) => Math.max(...getStream(target, args, ctx).filter(v => v !== null)),
+    min: (target, args, ctx) => {
+        const values = getStream(target, args, ctx);
+        if (values.length === 0) return null;
+        return values.reduce((min, current) => (compare(current, min) < 0 ? current : min), values[0]);
+    },
+    max: (target, args, ctx) => {
+        const values = getStream(target, args, ctx);
+        if (values.length === 0) return null;
+        return values.reduce((max, current) => (compare(current, max) > 0 ? current : max), values[0]);
+    },
     sort: (target, args, ctx) => {
-        const collection = [...(target as any[])];
+        const collection = [...(target as any[])]; // Create a shallow copy to avoid modifying original
         collection.sort((a, b) => {
             for (const iterator of args) {
                 const localCtxA = {...ctx, self: {[iterator.iteratorVar!]: a}};
@@ -101,8 +132,9 @@ const FUNCTIONS: Record<string, IdemFunction> = {
                 const valA = evaluate(iterator.iteratorExpression!, localCtxA);
                 const valB = evaluate(iterator.iteratorExpression!, localCtxB);
 
-                const direction = iterator.value === 'DESC' ? -1 : 1;
+                const direction = iterator.direction === 'DESC' ? -1 : 1;
                 const result = compare(valA, valB);
+
                 if (result !== 0) {
                     return result * direction;
                 }
@@ -115,15 +147,18 @@ const FUNCTIONS: Record<string, IdemFunction> = {
 
 function getStream(target: any, args: ASTNode[], ctx: EvalContext): any[] {
     const collection = target as any[];
-    if (args.length === 0) return collection;
+    if (args.length === 0) {
+        return collection.filter(v => v !== null);
+    }
     const iterator = args[0];
     return collection.map(item => {
         const localCtx = {...ctx, self: {[iterator.iteratorVar!]: item}};
         return evaluate(iterator.iteratorExpression!, localCtx);
-    });
+    }).filter(v => v !== null); // Per spec, undefined values are ignored in aggregations
 }
 
 export function dispatch(functionName: string, target: any, args: ASTNode[], ctx: EvalContext): any {
+    // Per spec, functions on undefined target return undefined, except for isDefined/isUndefined
     if (target === null && !['isDefined', 'isUndefined'].includes(functionName)) {
         return null;
     }

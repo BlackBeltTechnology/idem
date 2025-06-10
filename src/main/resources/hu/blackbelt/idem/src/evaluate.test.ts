@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { evaluate } from './evaluate';
 import { expressionToAst } from './parse';
 import { addDays, subDays } from 'date-fns';
+import { parseLocalDateAsUTC } from "./utils/datetime";
 
 const ctx = {
     self: {
@@ -13,7 +14,9 @@ const ctx = {
         matrix: [[1, 2], [3, 4]],
         str: 'hello',
         items: [1, 2, 3],
-        startDate: new Date('2025-06-15T00:00:00.000Z'),
+        itemsForAvg: [1, 2, 4], // avg = 2.333...
+        strings: ['c', 'a', 'b'],
+        startDate: parseLocalDateAsUTC('2025-06-15'),
         name: 'Idem Language',
         maybeNull: null,
         products: [
@@ -36,6 +39,7 @@ describe('IdemEvaluator', () => {
     it('parses numbers and unary minus', () => {
         expect(evalExpr('123')).toBe(123);
         expect(evalExpr('-123')).toBe(-123);
+        expect(evalExpr('123.45')).toBe(123.45);
         expect(evalExpr('0')).toBe(0);
     });
 
@@ -43,10 +47,16 @@ describe('IdemEvaluator', () => {
         expect(evalExpr('true')).toBe(true);
         expect(evalExpr('false')).toBe(false);
         expect(evalExpr('not false')).toBe(true);
+        expect(evalExpr('not self.maybeNull')).toBe(true);
     });
 
     it('parses null', () => {
         expect(evalExpr('null')).toBeNull();
+    });
+
+    it('parses enum literals', () => {
+        expect(evalExpr('MyEnum#MyValue')).toBe('MyEnum#MyValue');
+        expect(evalExpr('model::MyEnum#MyValue')).toBe('model::MyEnum#MyValue');
     });
 
     it('resolves self properties', () => {
@@ -61,10 +71,11 @@ describe('IdemEvaluator', () => {
         expect(evalExpr('2*3')).toBe(6);
         expect(evalExpr('8/4')).toBe(2);
         expect(evalExpr('10%3')).toBe(1);
+        expect(evalExpr('10/3')).toBeCloseTo(3.3333333333);
         expect(evalExpr('2^3')).toBe(8);
         expect(evalExpr('self.a + self.b')).toBe(3.5);
         expect(evalExpr('self.a + self.maybeNull')).toBeNull();
-        expect(evalExpr("'hello' + self.maybeNull")).toBeNull();
+        expect(evalExpr("'hello ' + self.maybeNull")).toBeNull();
     });
 
     it('handles div/mod operators', () => {
@@ -108,12 +119,14 @@ describe('IdemEvaluator', () => {
         expect(evalExpr('2 in self.items')).toBe(true);
         expect(evalExpr('4 in self.items')).toBe(false);
         expect(evalExpr('self.maybeNull in self.items')).toBeNull();
+        expect(evalExpr('2 in self.maybeNull')).toBe(false);
     });
 
     it('handles index access', () => {
         expect(evalExpr('self.items[1]')).toBe(2);
         expect(evalExpr('self.str[1]')).toBe('e');
         expect(evalExpr('self.matrix[1][0]')).toBe(3);
+        expect(evalExpr('self.items[99]')).toBeNull(); // Out of bounds
     });
 
     it('evaluates a complex expression', () => {
@@ -138,22 +151,27 @@ describe('IdemEvaluator', () => {
             expect(evalExpr("'hello'!first(2)")).toBe('he');
             expect(evalExpr("'hello'!last(2)")).toBe('lo');
             expect(evalExpr("'hello world'!position('world')")).toBe(6);
-            expect(evalExpr("'abc-123'!matches('[a-z]+-\\\\d+')")).toBe(true);
+            expect(evalExpr("'abc-123'!matches('[a-z]+-\\d+')")).toBe(true);
             expect(evalExpr("'a b c'!replace(' ', '-')")).toBe('a-b-c');
         });
 
         it('handles numeric functions', () => {
-            expect(evalExpr('1.2355!round(2)')).toBe(1.24);
-            expect(evalExpr('self.a!round()')).toBe(2);
+            // Test rounding to match Java's ROUND_HALF_UP
+            expect(evalExpr('1.235!round(2)')).toBe(1.24);
+            expect(evalExpr('1.2345!round(2)')).toBe(1.23);
+            expect(evalExpr('1.5!round()')).toBe(2);
+            expect(evalExpr('-1.5!round()')).toBe(-2);
+            expect(evalExpr('-1.4!round()')).toBe(-1);
+            expect(evalExpr('-1.6!round()')).toBe(-2);
         });
 
         it('handles temporal literals and functions', () => {
-            expect(evalExpr('`2023-12-31`').toISOString()).toContain('2023-12-31');
+            expect(evalExpr('`2023-12-31`')).toEqual(parseLocalDateAsUTC('2023-12-31'));
             const today = new Date();
             today.setUTCHours(0, 0, 0, 0);
-            expect(evalExpr('today').toISOString()).toEqual(today.toISOString());
-            expect(evalExpr('yesterday').toISOString()).toEqual(subDays(today, 1).toISOString());
-            expect(evalExpr('tomorrow').toISOString()).toEqual(addDays(today, 1).toISOString());
+            expect(evalExpr('today')).toEqual(today);
+            expect(evalExpr('yesterday')).toEqual(subDays(today, 1));
+            expect(evalExpr('tomorrow')).toEqual(addDays(today, 1));
             expect(evalExpr('`2025-06-10`!difference(`2025-06-08`)')).toBe(2);
             expect(evalExpr('`2025-01-01T12:00:10Z`!difference(`2025-01-01T12:00:00Z`)')).toBe(10);
         });
@@ -169,6 +187,16 @@ describe('IdemEvaluator', () => {
             expect(evalExpr("self.items!min()")).toBe(1);
             expect(evalExpr("self.items!max()")).toBe(3);
         });
+        
+        it('handles min/max on various types', () => {
+            expect(evalExpr('self.strings!min()')).toBe('a');
+            expect(evalExpr('self.strings!max()')).toBe('c');
+        });
+
+        it('handles collection avg with rounding', () => {
+            // 7 / 3 = 2.3333333333... rounded to 10 places
+            expect(evalExpr("self.itemsForAvg!avg()")).toBe(2.3333333333);
+        });
 
         it('handles iterator functions', () => {
             expect(evalExpr("self.orderDetails!sum(od | od.quantity)")).toBe(27);
@@ -176,11 +204,38 @@ describe('IdemEvaluator', () => {
             expect(evalExpr("self.orderDetails!min(od | od.unitPrice)")).toBe(9.8);
             expect(evalExpr("self.orderDetails!max(od | od.unitPrice)")).toBe(34.8);
             expect(evalExpr("self.products!join(p | p.productName, ', ')")).toBe('Chai, Chang, Aniseed Syrup');
-            expect(evalExpr("self.orderDetails!filter(od | od.unitPrice < 10)")).toHaveLength(1);
+            const filtered = evalExpr("self.orderDetails!filter(od | od.unitPrice < 10)");
+            expect(filtered).toHaveLength(1);
+            expect(filtered[0].unitPrice).toBe(9.8);
             const sorted = evalExpr("self.products!sort(p | p.unitPrice)");
             expect(sorted[0].unitPrice).toBe(10);
             const sortedDesc = evalExpr("self.products!sort(p | p.unitPrice DESC)");
             expect(sortedDesc[0].unitPrice).toBe(19);
+        });
+
+        it('handles chained iterator functions with correct sorting', () => {
+            const expr = "self.products!filter(p | p.unitPrice > 10)!sort(p | p.productName DESC)";
+            const result = evalExpr(expr);
+            // Products with price > 10 are Chai (18) and Chang (19).
+            // Sorted by productName DESC, 'Chang' comes before 'Chai'.
+            expect(result).toHaveLength(2);
+            expect(result[0].productName).toBe('Chang'); // Corrected expectation
+            expect(result[1].productName).toBe('Chai'); // Corrected expectation
+        });
+
+        it('handles join with null values', () => {
+            const ctxWithNulls = {
+                self: {
+                    ...ctx.self,
+                    products: [
+                        { productName: 'Chai'},
+                        { productName: null },
+                        { productName: 'Aniseed Syrup'}
+                    ]
+                }
+            };
+            const result = evaluate(expressionToAst("self.products!join(p | p.productName, ',')"), ctxWithNulls);
+            expect(result).toBe("Chai,null,Aniseed Syrup");
         });
     });
 });

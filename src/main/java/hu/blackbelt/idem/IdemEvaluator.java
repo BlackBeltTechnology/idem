@@ -1,6 +1,7 @@
 package hu.blackbelt.idem;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ public class IdemEvaluator {
             case DATE:
             case TIMESTAMP:
             case TIME:
+            case ENUM_LITERAL:
                 return node.getValue();
             case NULL:
                 return null;
@@ -61,20 +63,21 @@ public class IdemEvaluator {
                 Object target = evaluate(node.getTarget(), ctx);
                 return FunctionDispatcher.dispatch(node.getName(), target, node.getArguments(), ctx);
             }
-            case IN_EXPRESSION: {
-                Object left = evaluate(node.getChildren().get(0), ctx);
-                Object right = evaluate(node.getChildren().get(1), ctx);
-                if (left == null || right == null) return null;
-                if (!(right instanceof Collection)) return false;
-                return ((Collection) right).stream().anyMatch(item -> compare(left, item) == 0);
-            }
             case INDEX_ACCESS: {
                 Object target = evaluate(node.getChildren().get(0), ctx);
                 Object index = evaluate(node.getChildren().get(1), ctx);
                 if (target == null || index == null) return null;
                 int idx = toBigDecimal(index).intValue();
-                if (target instanceof List) return ((List) target).get(idx);
-                if (target instanceof String) return String.valueOf(((String) target).charAt(idx));
+                if (target instanceof List) {
+                    List list = (List) target;
+                    if (idx < 0 || idx >= list.size()) return null; // bounds check
+                    return list.get(idx);
+                }
+                if (target instanceof String) {
+                    String str = (String) target;
+                    if (idx < 0 || idx >= str.length()) return null; // bounds check
+                    return String.valueOf(str.charAt(idx));
+                }
                 throw new IllegalArgumentException("Index access is only supported for lists and strings.");
             }
             default:
@@ -84,29 +87,48 @@ public class IdemEvaluator {
 
     private static Object handleUnary(AstNode node, EvalContext ctx) {
         Object operand = evaluate(node.getChildren().get(0), ctx);
-        if (operand == null) return null;
         switch (node.getOperator()) {
-            case "-": return toBigDecimal(operand).negate();
-            case "not": return !toBoolean(operand);
-            default: throw new UnsupportedOperationException("Unknown unary operator: " + node.getOperator());
+            case "-":
+                if (operand == null) return null;
+                return toBigDecimal(operand).negate();
+            case "not":
+                // toBoolean(null) is false, so !toBoolean(null) is true. This is correct.
+                return !toBoolean(operand);
+            default:
+                throw new UnsupportedOperationException("Unknown unary operator: " + node.getOperator());
         }
     }
 
     private static Object handleBinary(AstNode node, EvalContext ctx) {
         Object left = evaluate(node.getChildren().get(0), ctx);
+
+        // Short-circuit logical operators
+        if ("and".equals(node.getOperator()) && !toBoolean(left)) return false;
+        if ("or".equals(node.getOperator()) && toBoolean(left)) return true;
+        if ("implies".equals(node.getOperator()) && !toBoolean(left)) return true;
+
         Object right = evaluate(node.getChildren().get(1), ctx);
 
-        // Undefined propagation
+        // Undefined propagation for string concatenation
         if ("+".equals(node.getOperator())) {
             if (left instanceof String || right instanceof String) {
                 if (left == null || right == null) return null;
-                return Objects.toString(left) + Objects.toString(right);
+                return Objects.toString(left, "") + Objects.toString(right, "");
             }
         }
 
+        // Undefined propagation for 'in'
+        if ("in".equals(node.getOperator())) {
+            if (left == null || right == null) return null;
+            if (!(right instanceof Collection)) return false;
+            return ((Collection) right).stream().anyMatch(item -> compare(left, item) == 0);
+        }
+
+        // Standard undefined propagation for arithmetic and comparison
         if (!isLogical(node.getOperator())) {
             if (left == null || right == null) return null;
         }
+
 
         switch (node.getOperator()) {
             case "+":
@@ -114,16 +136,18 @@ public class IdemEvaluator {
             case "-": return toBigDecimal(left).subtract(toBigDecimal(right));
             case "*": return toBigDecimal(left).multiply(toBigDecimal(right));
             case "/": return toBigDecimal(left).divide(toBigDecimal(right), 10, RoundingMode.HALF_UP);
-            case "div": return toBigDecimal(left).toBigInteger().divide(toBigDecimal(right).toBigInteger());
+            case "div": return new BigDecimal(toBigDecimal(left).toBigInteger().divide(toBigDecimal(right).toBigInteger()));
             case "mod":
             case "%":
-                return toBigDecimal(left).toBigInteger().remainder(toBigDecimal(right).toBigInteger());
+                return new BigDecimal(toBigDecimal(left).toBigInteger().remainder(toBigDecimal(right).toBigInteger()));
             case "^": return toBigDecimal(left).pow(toBigDecimal(right).intValue());
             case "and": return toBoolean(left) && toBoolean(right);
             case "or": return toBoolean(left) || toBoolean(right);
             case "xor": return toBoolean(left) != toBoolean(right);
             case "implies": return !toBoolean(left) || toBoolean(right);
-            case "=": case "==": return compare(left, right) == 0;
+            case "=":
+            case "==":
+                return compare(left, right) == 0;
             case "!=": case "<>": return compare(left, right) != 0;
             case ">": return compare(left, right) > 0;
             case ">=": return compare(left, right) >= 0;
@@ -164,7 +188,11 @@ public class IdemEvaluator {
     }
 
     public static BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            throw new ClassCastException("Cannot cast null to BigDecimal.");
+        }
         if (value instanceof BigDecimal) return (BigDecimal) value;
+        if (value instanceof BigInteger) return new BigDecimal((BigInteger) value);
         if (value instanceof Number) return new BigDecimal(value.toString());
         if (value instanceof String) return new BigDecimal((String) value);
         if (value instanceof Boolean) return (Boolean) value ? BigDecimal.ONE : BigDecimal.ZERO;
@@ -174,7 +202,8 @@ public class IdemEvaluator {
     public static boolean toBoolean(Object value) {
         if (value instanceof Boolean) return (Boolean) value;
         if (value == null) return false; // Undefined is false in logical contexts
-        if (value instanceof Number && ((Number) value).doubleValue() == 0) return false;
-        return true; // Any other non-null, non-boolean value is truthy
+        if (value instanceof Number && toBigDecimal(value).compareTo(BigDecimal.ZERO) == 0) return false;
+        if (value instanceof String && ((String) value).isEmpty()) return false;
+        return true; // Any other non-null, non-empty value is truthy
     }
 }
