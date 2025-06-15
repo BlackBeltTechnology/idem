@@ -63,6 +63,6 @@ jobs:
             - name: Commit, Tag and Push changes
               run: |
                   git add package.json pnpm-lock.yaml tsconfig.tsbuildinfo
-                  git commit -m "chore(release): version ${{ github.inputs.version }}"
-                  git tag -a "v${{ github.inputs.version }}" -m "Version ${{ github.inputs.version }}"
+                  git commit -m "chore(release): version ${{ inputs.version }}"
+                  git tag -a "v${{ inputs.version }}" -m "Version ${{ inputs.version }}"
                   git push --follow-tags
