@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -189,6 +190,13 @@ public class IdemEvaluatorTest {
         assertEquals(LocalDate.now(), evaluate("today"));
         assertEquals(new BigDecimal(2), evaluate("`2025-06-10`!difference(`2025-06-08`)"));
     }
+
+    @Test
+    void testTimeLiterals() {
+        assertEquals(LocalTime.of(10, 30, 5), evaluate("`10:30:05`"));
+        assertEquals(LocalTime.of(10, 30), evaluate("`10:30`"));
+    }
+
 
     @Test
     void testCollectionFunctions() {
