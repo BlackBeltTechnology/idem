@@ -1,6 +1,6 @@
 import { addDays, differenceInDays, differenceInSeconds, parseISO, subDays } from 'date-fns';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { type EvalExpr, createEvalExpr } from './evaluate';
+import { type EvalExpr, createEvalExpr, compare } from './evaluate';
 import { parseLocalDateAsUTC } from './utils/datetime';
 
 interface Product {
@@ -206,6 +206,12 @@ describe('IdemEvaluator', () => {
       expect(evalExpr('tomorrow')).toEqual(addDays(today, 1));
       expect(evalExpr('`2025-06-10`!difference(`2025-06-08`)')).toBe(2);
       expect(evalExpr('`2025-01-01T12:00:10Z`!difference(`2025-01-01T12:00:00Z`)')).toBe(10);
+      const d = new Date(0);
+      d.setUTCHours(10, 30, 5);
+      expect(evalExpr('`10:30:05`')).toEqual(d);
+      const d2 = new Date(0);
+      d2.setUTCHours(10, 30, 0);
+      expect(evalExpr('`10:30`')).toEqual(d2);
     });
 
     it('handles collection functions', () => {
@@ -264,6 +270,56 @@ describe('IdemEvaluator', () => {
       };
       const result = evalExpr("self.products!join(p | p.productName, ',')", ctxWithNulls);
       expect(result).toBe('Chai,null,Aniseed Syrup');
+    });
+  });
+
+  describe('compare', () => {
+    it('should compare numbers correctly', () => {
+      expect(compare(1, 2)).toBe(-1);
+      expect(compare(2, 1)).toBe(1);
+      expect(compare(1, 1)).toBe(0);
+    });
+
+    it('should compare strings case-insensitively', () => {
+      expect(compare('a', 'b')).toBe(-1);
+      expect(compare('b', 'a')).toBe(1);
+      expect(compare('a', 'a')).toBe(0);
+      expect(compare('a', 'A')).toBe(0);
+    });
+
+    it('should compare booleans correctly', () => {
+      expect(compare(true, false)).toBe(1);
+      expect(compare(false, true)).toBe(-1);
+      expect(compare(true, true)).toBe(0);
+      expect(compare(false, false)).toBe(0);
+    });
+
+    it('should compare dates correctly', () => {
+      const d1 = new Date(100);
+      const d2 = new Date(200);
+      expect(compare(d1, d2)).toBe(-1);
+      expect(compare(d2, d1)).toBe(1);
+      expect(compare(d1, d1)).toBe(0);
+    });
+
+    it('should handle nulls correctly', () => {
+      expect(compare(null, null)).toBe(0);
+      expect(compare(null, 1)).toBe(-1);
+      expect(compare(1, null)).toBe(1);
+    });
+
+    it('should use loose equality for different types', () => {
+      expect(compare(1, '1')).toBe(0);
+      expect(compare(0, false)).toBe(0);
+      expect(compare(1, true)).toBe(0);
+    });
+
+    it('should consider incomparable types as equal', () => {
+      expect(compare({}, {})).toBe(0);
+      expect(compare([], [])).toBe(0);
+      expect(compare(1, 'a')).toBe(0);
+      expect(compare(new Date(), 123)).toBe(0);
+      expect(compare({ a: 1 }, { a: 1 })).toBe(0);
     });
   });
 });

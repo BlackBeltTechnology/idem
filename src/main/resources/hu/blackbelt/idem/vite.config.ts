@@ -26,7 +26,13 @@ export default defineConfig(({ mode }) => ({
     },
     test: {
       coverage: {
-        exclude: ['src/generated', 'src/types', 'dist', '**.config.ts'],
+        exclude: [
+          'src/generated',
+          'src/types',
+          'src/index.ts',
+          'dist',
+          '**.config.ts',
+        ],
       },
     },
     plugins: [
