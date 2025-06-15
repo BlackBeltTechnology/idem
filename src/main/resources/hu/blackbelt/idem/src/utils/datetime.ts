@@ -4,5 +4,5 @@
  * '2023-10-24T23:00:00.000Z' in a negative UTC offset timezone.
  */
 export function parseLocalDateAsUTC(isoDate: string): Date {
-    return new Date(`${isoDate}T00:00:00.000Z`);
+  return new Date(`${isoDate}T00:00:00.000Z`);
 }

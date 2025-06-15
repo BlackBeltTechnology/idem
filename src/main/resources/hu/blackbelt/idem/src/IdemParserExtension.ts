@@ -1,5 +1,5 @@
-import { IdemParser } from "./generated/IdemParser";
-import { TokenStream } from "antlr4ng";
+import type { TokenStream } from 'antlr4ng';
+import { IdemParser } from './generated/IdemParser';
 
 /**
  * This file extends the generated IdemParser with custom methods for semantic predicates.
@@ -7,9 +7,9 @@ import { TokenStream } from "antlr4ng";
  * This keeps the grammar file (.g4) target-agnostic.
  */
 declare module '~/generated/IdemParser' {
-    interface IdemParser {
-        isIterator(): boolean;
-    }
+  interface IdemParser {
+    isIterator(): boolean;
+  }
 }
 
 /**
@@ -17,12 +17,12 @@ declare module '~/generated/IdemParser' {
  * It checks if the token following an Identifier is a '|'.
  * In antlr4ng, the input stream is `this.inputStream`.
  */
-IdemParser.prototype.isIterator = function(): boolean {
-    const stream = this.inputStream as TokenStream;
-    // Get the token first and check if it's null before accessing properties.
-    const lookaheadToken = stream.LT(2);
-    if (!lookaheadToken) {
-        return false;
-    }
-    return lookaheadToken.text === "|";
-}
+IdemParser.prototype.isIterator = function (): boolean {
+  const stream = this.inputStream as TokenStream;
+  // Get the token first and check if it's null before accessing properties.
+  const lookaheadToken = stream.LT(2);
+  if (!lookaheadToken) {
+    return false;
+  }
+  return lookaheadToken.text === '|';
+};
