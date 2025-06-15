@@ -1,6 +1,6 @@
 {
   "name": "@judo/idem",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A powerful and expressive query language designed for filtering and manipulating data",
   "type": "module",
   "main": "dist/idem.cjs.js",
