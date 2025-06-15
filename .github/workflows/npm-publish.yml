@@ -44,7 +44,7 @@ jobs:
               run: pnpm install --frozen-lockfile
 
             - name: Update package version
-              run: pnpm version ${{ github.inputs.version }} --no-git-tag-version
+              run: pnpm version ${{ inputs.version }} --no-git-tag-version
 
             - name: Generate ANTLR sources
               run: pnpm run generate:antlr
