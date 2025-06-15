@@ -1,6 +1,6 @@
 import { addDays, differenceInDays, differenceInSeconds, parseISO, subDays } from 'date-fns';
-import { beforeAll, describe, expect, it } from 'vitest';
-import { type EvalExpr, createEvalExpr, compare } from './evaluate';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { type EvalExpr, compare, createEvalExpr } from './evaluate';
 import { parseLocalDateAsUTC } from './utils/datetime';
 
 interface Product {
@@ -47,6 +47,13 @@ const ctx = {
       { orderId: 10249, productId: 72, unitPrice: 34.8, quantity: 5, discount: 0 },
     ],
   },
+  dateFunctions: {
+    addDays,
+    subDays,
+    parseISO,
+    differenceInSeconds,
+    differenceInDays,
+  },
 };
 
 describe('IdemEvaluator', () => {
@@ -64,8 +71,23 @@ describe('IdemEvaluator', () => {
     });
   });
 
+  it('should return undefined and log an error for invalid expressions', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const invalidExpr = '1 + ';
+    const result = evalExpr(invalidExpr, ctx);
+
+    expect(result).toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      `Failed to evaluate idem expression: "${invalidExpr}"`,
+      '\nContext:',
+      ctx,
+      '\nError:',
+      expect.any(Error),
+    );
+  });
+
   it('works without context', () => {
-    expect(evalExpr('1 + 1')).toBe(2);
+    expect(evalExpr<number>('1 + 1')).toBe(2);
   });
 
   it('parses numbers and unary minus', () => {

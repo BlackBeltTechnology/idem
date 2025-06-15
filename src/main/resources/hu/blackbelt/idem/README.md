@@ -63,6 +63,12 @@ const result2 = evalExpr('2 in self.items', context);
 console.log(result2); // Output: true
 ```
 
+The `evalExpr` function has an optional `T` generic type, but keep in mind, that
+whatever generic type we provide to the function, the result is **never** guaranteed!
+
+The `evalExpr` function will always catch Errors and in such cases an `undefined`
+value will be returned.
+
 ## Development
 
 This project uses TypeScript, Vite for bundling, and Vitest for testing.

@@ -21,7 +21,22 @@ export interface EvalContext {
   dateFunctions: DateFunctions;
 }
 
-export type EvalExpr = (expr: string, ctx?: Pick<EvalContext, 'self'>) => unknown;
+export type EvalExpr = <T = unknown>(expr: string, ctx?: Pick<EvalContext, 'self'>) => T | undefined;
+
+// biome-ignore lint/suspicious/noExplicitAny: this is fine
+const astCache = new Map<string, any>();
+
+function getCached<T>(key: string, expression: () => T): T {
+  if (astCache.has(key)) {
+    return astCache.get(key);
+  }
+
+  const result = expression();
+
+  astCache.set(key, result);
+
+  return result;
+}
 
 /**
  * Creates a customized evaluation function with specific helper implementations.
@@ -32,14 +47,20 @@ export type EvalExpr = (expr: string, ctx?: Pick<EvalContext, 'self'>) => unknow
  * @returns A new evalExpr-like function that uses the provided helper functions.
  */
 export function createEvalExpr(other: Omit<EvalContext, 'self'>): EvalExpr {
-  return (expr: string, ctx: { self: Self } = { self: {} }): unknown => {
+  return <T = unknown>(expr: string, ctx: { self: Self } = { self: {} }): T | undefined => {
     const evalContext: EvalContext = { ...ctx, ...other };
-    return evalExpr(expr, evalContext);
+    return evalExpr(expr, evalContext) as T | undefined;
   };
 }
 
-export function evalExpr(expr: string, ctx: EvalContext): unknown {
-  return evaluate(expressionToAst(expr), ctx);
+function evalExpr(expr: string, ctx: EvalContext): unknown {
+  try {
+    const astNode = getCached<ASTNode>(expr, () => expressionToAst(expr));
+    return evaluate(astNode, ctx);
+  } catch (error) {
+    console.error(`Failed to evaluate idem expression: "${expr}"`, '\nContext:', ctx, '\nError:', error);
+    return undefined;
+  }
 }
 
 export function evaluate(node: ASTNode, ctx: EvalContext): unknown {

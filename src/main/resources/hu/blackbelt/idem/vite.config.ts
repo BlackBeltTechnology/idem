@@ -22,6 +22,11 @@ export default defineConfig(({ mode }) => ({
         rollupOptions: {
             // biome-ignore lint/suspicious/noExplicitAny: this is fine
             external: Object.keys((pkg as any).peerDependencies || {}),
+            output: {
+                globals: {
+                    antlr4ng: 'antlr4ng'
+                },
+            },
         },
     },
     test: {
