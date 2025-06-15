@@ -1,7 +1,6 @@
-import { addDays, subDays } from 'date-fns';
-import { describe, expect, it } from 'vitest';
-import { evalExpr, evaluate } from './evaluate';
-import { expressionToAst } from './parse';
+import { addDays, differenceInDays, differenceInSeconds, parseISO, subDays } from 'date-fns';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { type EvalExpr, createEvalExpr } from './evaluate';
 import { parseLocalDateAsUTC } from './utils/datetime';
 
 interface Product {
@@ -51,6 +50,20 @@ const ctx = {
 };
 
 describe('IdemEvaluator', () => {
+  let evalExpr: EvalExpr;
+
+  beforeAll(() => {
+    evalExpr = createEvalExpr({
+      dateFunctions: {
+        addDays,
+        subDays,
+        parseISO,
+        differenceInSeconds,
+        differenceInDays,
+      },
+    });
+  });
+
   it('works without context', () => {
     expect(evalExpr('1 + 1')).toBe(2);
   });
@@ -249,7 +262,7 @@ describe('IdemEvaluator', () => {
           products: [{ productName: 'Chai' }, { productName: null }, { productName: 'Aniseed Syrup' }],
         },
       };
-      const result = evaluate(expressionToAst("self.products!join(p | p.productName, ',')"), ctxWithNulls);
+      const result = evalExpr("self.products!join(p | p.productName, ',')", ctxWithNulls);
       expect(result).toBe('Chai,null,Aniseed Syrup');
     });
   });

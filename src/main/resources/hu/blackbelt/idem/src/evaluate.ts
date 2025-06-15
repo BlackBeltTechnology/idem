@@ -1,4 +1,3 @@
-import { addDays, parseISO, subDays } from 'date-fns';
 import type { ASTNode } from '~/types/ast';
 import { dispatch } from './functional-dispatcher';
 import { expressionToAst } from './parse';
@@ -9,15 +8,41 @@ export interface Self {
   [key: string]: any;
 }
 
-export interface EvalContext {
-  self: Self;
+export interface DateFunctions {
+  addDays: (date: Date | number, amount: number) => Date;
+  subDays: (date: Date | number, amount: number) => Date;
+  parseISO: (argument: string) => Date;
+  differenceInDays: (dateLeft: Date | number, dateRight: Date | number) => number;
+  differenceInSeconds: (dateLeft: Date | number, dateRight: Date | number) => number;
 }
 
-export function evalExpr(expr: string, ctx?: EvalContext): unknown {
+export interface EvalContext {
+  self: Self;
+  dateFunctions: DateFunctions;
+}
+
+export type EvalExpr = (expr: string, ctx?: Pick<EvalContext, 'self'>) => unknown;
+
+/**
+ * Creates a customized evaluation function with specific helper implementations.
+ * This allows for dependency injection of helper functions, making the expression
+ * evaluation more flexible and testable.
+ *
+ * @param other An object with full implementation of helper functions.
+ * @returns A new evalExpr-like function that uses the provided helper functions.
+ */
+export function createEvalExpr(other: Omit<EvalContext, 'self'>): EvalExpr {
+  return (expr: string, ctx: { self: Self } = { self: {} }): unknown => {
+    const evalContext: EvalContext = { ...ctx, ...other };
+    return evalExpr(expr, evalContext);
+  };
+}
+
+export function evalExpr(expr: string, ctx: EvalContext): unknown {
   return evaluate(expressionToAst(expr), ctx);
 }
 
-export function evaluate(node: ASTNode, ctx: EvalContext = { self: {} }): unknown {
+export function evaluate(node: ASTNode, ctx: EvalContext): unknown {
   if (!node) return null;
 
   switch (node.type) {
@@ -32,7 +57,7 @@ export function evaluate(node: ASTNode, ctx: EvalContext = { self: {} }): unknow
     case 'Date':
       return parseLocalDateAsUTC(node.value as string);
     case 'Timestamp':
-      return parseISO(node.value as string);
+      return ctx.dateFunctions.parseISO(node.value as string);
     case 'Time': {
       const [h, m, s] = (node.value as string).split(':');
       const d = new Date(0);
@@ -47,12 +72,12 @@ export function evaluate(node: ASTNode, ctx: EvalContext = { self: {} }): unknow
     case 'Yesterday': {
       const d = new Date();
       d.setUTCHours(0, 0, 0, 0);
-      return subDays(d, 1);
+      return ctx.dateFunctions.subDays(d, 1);
     }
     case 'Tomorrow': {
       const d = new Date();
       d.setUTCHours(0, 0, 0, 0);
-      return addDays(d, 1);
+      return ctx.dateFunctions.addDays(d, 1);
     }
 
     case 'Self':

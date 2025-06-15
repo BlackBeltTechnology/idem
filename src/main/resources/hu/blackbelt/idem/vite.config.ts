@@ -2,6 +2,8 @@ import path from 'node:path';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
+import pkg from './package.json';
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
     base: '',
@@ -17,9 +19,15 @@ export default defineConfig(({ mode }) => ({
             fileName: (format) => `idem.${format}.js`,
             formats: ['es', 'cjs', 'umd'],
         },
+        rollupOptions: {
+            // biome-ignore lint/suspicious/noExplicitAny: this is fine
+            external: Object.keys((pkg as any).peerDependencies || {}),
+        },
     },
     test: {
-        // configuration for vitest
+      coverage: {
+        exclude: ['src/generated', 'src/types', 'dist', '**.config.ts'],
+      },
     },
     plugins: [
       dts({

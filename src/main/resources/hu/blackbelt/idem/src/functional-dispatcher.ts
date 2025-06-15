@@ -1,4 +1,3 @@
-import { differenceInDays, differenceInSeconds } from 'date-fns';
 import { compare, evaluate, toBoolean } from './evaluate';
 import type { EvalContext } from './evaluate';
 import type { ASTNode } from './types/ast';
@@ -72,9 +71,9 @@ const FUNCTIONS: Record<string, IdemFunction> = {
         right.getUTCMinutes() === 0 &&
         right.getUTCSeconds() === 0
       ) {
-        return differenceInDays(target, right);
+        return ctx.dateFunctions.differenceInDays(target, right);
       }
-      return differenceInSeconds(target, right);
+      return ctx.dateFunctions.differenceInSeconds(target, right);
     }
     return null;
   },

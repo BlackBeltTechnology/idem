@@ -4,7 +4,7 @@
 
 ## Overview
 
-Idem is a powerful and expressive query language designed for filtering and manipulating data. This library provides a lightweight, zero-dependency parser and evaluator for the Idem language, built with TypeScript and ANTLR4.
+Idem is a powerful and expressive query language designed for filtering and manipulating data. This library provides a lightweight parser and evaluator for the Idem language, built with TypeScript and ANTLR4.
 
 It is designed to be easily integrated into any JavaScript or TypeScript project, whether it's running in Node.js or the browser.
 
@@ -25,34 +25,42 @@ pnpm install idem
 ...
 ```
 
+This library has antlr4ng as a peer dependency. You will need to install it alongside this library if you haven't already.
+
+```bash
+npm install antlr4ng
+pnpm install antlr4ng
+...
+```
+
 ## Usage
 
-The primary way to use the library is by importing the `evaluate` function. You can pass it an Idem query string and a context object containing the data you want to query.
+The primary way to use the library is by creating an `evalExpr` function using the `createEvalExpr` factory. This allows you to provide your own implementation for helper functions, such as date manipulation.
+
+The `createEvalExpr` function requires an object with a `dateFunctions` property, which you can implement using a library like `date-fns` or with your own custom functions.
 
 Here is a simple example:
 
 ```typescript
-import { evalExpr } from 'idem';
+import { createEvalExpr } from 'idem';
+import { addDays, subDays, parseISO, differenceInDays, differenceInSeconds } from 'date-fns';
+
+// Create a configured version of the evaluator
+const evalExpr = createEvalExpr({ dateFunctions: { addDays, subDays, parseISO, differenceInDays, differenceInSeconds, } });
 
 // The context object contains the data you want to query.
 // The 'self' property is the root of the data.
-
 const context = {
   self: { a: 1.5, b: 2, items: [1, 2, 3], },
 };
 
 // --- Example 1: Simple Arithmetic ---
-
 const result1 = evalExpr('20 - 5');
-
 console.log(result1); // Output: 15
 
 // --- Example 2: Checking for an item in a list ---
-
 const result2 = evalExpr('2 in self.items', context);
-
 console.log(result2); // Output: true
-
 ```
 
 ## Development
@@ -76,7 +84,7 @@ The following scripts are available:
 *   `pnpm generate:antlr`: Regenerates the ANTLR parser from `Idem.g4`.
 *   `pnpm test`: Runs the test suite using Vitest.
 *   `pnpm coverage`: Runs tests and generates a coverage report.
-*   `pnpm format`: Formats the code using Biome.
+*   `pnpm format`: Formats, and fixes the code using Biome.
 *   `pnpm lint`: Lints the code using Biome.
 
 ## Contributing
@@ -89,4 +97,4 @@ Please feel free to open an issue or submit a pull request.
 
 ## License
 
-This project is licensed under the Eclipse Public License 2.0. See the [LICENSE.txt](LICENSE.txt) fil
+This project is licensed under the Eclipse Public License 2.0. See the [LICENSE.txt](LICENSE.txt) file.

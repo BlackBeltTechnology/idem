@@ -42,10 +42,11 @@
     "Idem.g4"
   ],
   "devDependencies": {
-    "antlr-ng": "^1.0.9",
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.15.30",
     "@vitest/coverage-v8": "^3.2.2",
+    "antlr-ng": "^1.0.9",
+    "date-fns": "^4.1.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-dts": "^4.5.4",
@@ -56,8 +57,7 @@
       "@biomejs/biome"
     ]
   },
-  "dependencies": {
-    "antlr4ng": "^3.0.16",
-    "date-fns": "^4.1.0"
+  "peerDependencies": {
+    "antlr4ng": "^3.0.16"
   }
 }
