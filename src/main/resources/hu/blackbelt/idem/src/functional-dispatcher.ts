@@ -34,15 +34,15 @@ const FUNCTIONS: Record<string, IdemFunction> = {
   upperCase: (target) => String(target).toUpperCase(),
   length: (target) => String(target).length,
   substring: (target, args, ctx) => {
-    const from = evaluate(args[0], ctx);
-    const len = evaluate(args[1], ctx);
+    const from = evaluate(args[0], ctx) as number;
+    const len = evaluate(args[1], ctx) as number;
     return String(target).substring(from, from + len);
   },
   first: (target, args, ctx) => String(target).substring(0, evaluate(args[0], ctx) as number),
-  last: (target, args, ctx) => String(target).slice(-evaluate(args[0], ctx)),
+  last: (target, args, ctx) => String(target).slice(-(evaluate(args[0], ctx) as number)),
   position: (target, args, ctx) => String(target).indexOf(String(evaluate(args[0], ctx))),
   matches: (target, args, ctx) => {
-    const pattern = evaluate(args[0], ctx);
+    const pattern = evaluate(args[0], ctx) as string;
     try {
       return new RegExp(pattern).test(target);
     } catch (e) {
@@ -55,7 +55,7 @@ const FUNCTIONS: Record<string, IdemFunction> = {
 
   // Numeric
   round: (target, args, ctx) => {
-    const precision = args.length > 0 ? evaluate(args[0], ctx) : 0;
+    const precision = args.length > 0 ? (evaluate(args[0], ctx) as number) : 0;
     return round(target, precision);
   },
 
@@ -83,16 +83,16 @@ const FUNCTIONS: Record<string, IdemFunction> = {
   size: (target) => (target as unknown[]).length,
   count: (target) => (target as unknown[]).length,
   head: (target, args, ctx) => (target as unknown[]).slice(0, evaluate(args[0], ctx) as number),
-  tail: (target, args, ctx) => (target as unknown[]).slice(-evaluate(args[0], ctx)),
+  tail: (target, args, ctx) => (target as unknown[]).slice(-(evaluate(args[0], ctx) as number)),
   limit: (target, args, ctx) => {
-    const count = evaluate(args[0], ctx);
-    const offset = args.length > 1 ? evaluate(args[1], ctx) : 0;
+    const count = evaluate(args[0], ctx) as number;
+    const offset = args.length > 1 ? (evaluate(args[1], ctx) as number) : 0;
     return (target as unknown[]).slice(offset, offset + count);
   },
   join: (target, args, ctx) => {
     const collection = target as unknown[];
     const iterator = args[0];
-    const delimiter = evaluate(args[1], ctx);
+    const delimiter = evaluate(args[1], ctx) as string;
     return collection
       .map((item) => {
         if (!iterator.iteratorVar || !iterator.iteratorExpression) return 'null';

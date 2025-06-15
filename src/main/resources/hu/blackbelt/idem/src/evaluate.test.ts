@@ -1,8 +1,23 @@
 import { addDays, subDays } from 'date-fns';
 import { describe, expect, it } from 'vitest';
-import { evaluate } from './evaluate';
+import { evalExpr, evaluate } from './evaluate';
 import { expressionToAst } from './parse';
 import { parseLocalDateAsUTC } from './utils/datetime';
+
+interface Product {
+  productId: number;
+  productName: string;
+  unitPrice: number;
+  discontinued: boolean;
+}
+
+interface OrderDetail {
+  orderId: number;
+  productId: number;
+  unitPrice: number;
+  quantity: number;
+  discount: number;
+}
 
 const ctx = {
   self: {
@@ -35,9 +50,11 @@ const ctx = {
   },
 };
 
-const evalExpr = (expr: string) => evaluate(expressionToAst(expr), ctx);
-
 describe('IdemEvaluator', () => {
+  it('works without context', () => {
+    expect(evalExpr('1 + 1')).toBe(2);
+  });
+
   it('parses numbers and unary minus', () => {
     expect(evalExpr('123')).toBe(123);
     expect(evalExpr('-123')).toBe(-123);
@@ -49,7 +66,7 @@ describe('IdemEvaluator', () => {
     expect(evalExpr('true')).toBe(true);
     expect(evalExpr('false')).toBe(false);
     expect(evalExpr('not false')).toBe(true);
-    expect(evalExpr('not self.maybeNull')).toBe(true);
+    expect(evalExpr('not self.maybeNull', ctx)).toBe(true);
   });
 
   it('parses null', () => {
@@ -62,9 +79,9 @@ describe('IdemEvaluator', () => {
   });
 
   it('resolves self properties', () => {
-    expect(evalExpr('self.a')).toBe(1.5);
-    expect(evalExpr('self.nested.x')).toBe(42);
-    expect(evalExpr('self.nonExistent')).toBeNull();
+    expect(evalExpr('self.a', ctx)).toBe(1.5);
+    expect(evalExpr('self.nested.x', ctx)).toBe(42);
+    expect(evalExpr('self.nonExistent', ctx)).toBeNull();
   });
 
   it('handles arithmetic operators', () => {
@@ -75,9 +92,9 @@ describe('IdemEvaluator', () => {
     expect(evalExpr('10%3')).toBe(1);
     expect(evalExpr('10/3')).toBeCloseTo(3.3333333333);
     expect(evalExpr('2^3')).toBe(8);
-    expect(evalExpr('self.a + self.b')).toBe(3.5);
-    expect(evalExpr('self.a + self.maybeNull')).toBeNull();
-    expect(evalExpr("'hello ' + self.maybeNull")).toBeNull();
+    expect(evalExpr('self.a + self.b', ctx)).toBe(3.5);
+    expect(evalExpr('self.a + self.maybeNull', ctx)).toBeNull();
+    expect(evalExpr("'hello ' + self.maybeNull", ctx)).toBeNull();
   });
 
   it('handles div/mod operators', () => {
@@ -114,40 +131,40 @@ describe('IdemEvaluator', () => {
 
   it('handles ternary operator', () => {
     expect(evalExpr('1 > 0 ? 10 : 20')).toBe(10);
-    expect(evalExpr('self.maybeNull ? 10 : 20')).toBe(20);
+    expect(evalExpr('self.maybeNull ? 10 : 20', ctx)).toBe(20);
   });
 
   it('handles in operator', () => {
-    expect(evalExpr('2 in self.items')).toBe(true);
-    expect(evalExpr('4 in self.items')).toBe(false);
-    expect(evalExpr('self.maybeNull in self.items')).toBeNull();
-    expect(evalExpr('2 in self.maybeNull')).toBe(false);
+    expect(evalExpr('2 in self.items', ctx)).toBe(true);
+    expect(evalExpr('4 in self.items', ctx)).toBe(false);
+    expect(evalExpr('self.maybeNull in self.items', ctx)).toBeNull();
+    expect(evalExpr('2 in self.maybeNull', ctx)).toBe(false);
   });
 
   it('handles index access', () => {
-    expect(evalExpr('self.items[1]')).toBe(2);
-    expect(evalExpr('self.str[1]')).toBe('e');
-    expect(evalExpr('self.matrix[1][0]')).toBe(3);
-    expect(evalExpr('self.items[99]')).toBeNull(); // Out of bounds
+    expect(evalExpr('self.items[1]', ctx)).toBe(2);
+    expect(evalExpr('self.str[1]', ctx)).toBe('e');
+    expect(evalExpr('self.matrix[1][0]', ctx)).toBe(3);
+    expect(evalExpr('self.items[99]', ctx)).toBeNull(); // Out of bounds
   });
 
   it('evaluates a complex expression', () => {
     const expr = 'not (self.a + self.b > 5) and (2 in self.items) ? self.matrix[0][1] : self.nested.x';
-    expect(evalExpr(expr)).toBe(2);
+    expect(evalExpr(expr, ctx)).toBe(2);
   });
 
   describe('Built-in Functions', () => {
     it('handles generic functions', () => {
-      expect(evalExpr('self.a!isDefined()')).toBe(true);
-      expect(evalExpr('self.maybeNull!isDefined()')).toBe(false);
-      expect(evalExpr('self.maybeNull!isUndefined()')).toBe(true);
-      expect(evalExpr('self.nonExistent!size()')).toBeNull();
+      expect(evalExpr('self.a!isDefined()', ctx)).toBe(true);
+      expect(evalExpr('self.maybeNull!isDefined()', ctx)).toBe(false);
+      expect(evalExpr('self.maybeNull!isUndefined()', ctx)).toBe(true);
+      expect(evalExpr('self.nonExistent!size()', ctx)).toBeNull();
     });
 
     it('handles string functions', () => {
-      expect(evalExpr('self.name!lowerCase()')).toBe('idem language');
-      expect(evalExpr('self.name!upperCase()')).toBe('IDEM LANGUAGE');
-      expect(evalExpr('self.name!length()')).toBe(13);
+      expect(evalExpr('self.name!lowerCase()', ctx)).toBe('idem language');
+      expect(evalExpr('self.name!upperCase()', ctx)).toBe('IDEM LANGUAGE');
+      expect(evalExpr('self.name!length()', ctx)).toBe(13);
       expect(evalExpr("' hello '!trim()")).toBe('hello');
       expect(evalExpr("'hello'!substring(1, 3)")).toBe('ell');
       expect(evalExpr("'hello'!first(2)")).toBe('he');
@@ -179,45 +196,45 @@ describe('IdemEvaluator', () => {
     });
 
     it('handles collection functions', () => {
-      expect(evalExpr('self.items!size()')).toBe(3);
-      expect(evalExpr('self.items!count()')).toBe(3);
-      expect(evalExpr('self.items!head(2)')).toEqual([1, 2]);
-      expect(evalExpr('self.items!tail(2)')).toEqual([2, 3]);
-      expect(evalExpr('self.items!limit(1, 1)')).toEqual([2]);
-      expect(evalExpr('self.items!sum()')).toBe(6);
-      expect(evalExpr('self.items!avg()')).toBe(2);
-      expect(evalExpr('self.items!min()')).toBe(1);
-      expect(evalExpr('self.items!max()')).toBe(3);
+      expect(evalExpr('self.items!size()', ctx)).toBe(3);
+      expect(evalExpr('self.items!count()', ctx)).toBe(3);
+      expect(evalExpr('self.items!head(2)', ctx)).toEqual([1, 2]);
+      expect(evalExpr('self.items!tail(2)', ctx)).toEqual([2, 3]);
+      expect(evalExpr('self.items!limit(1, 1)', ctx)).toEqual([2]);
+      expect(evalExpr('self.items!sum()', ctx)).toBe(6);
+      expect(evalExpr('self.items!avg()', ctx)).toBe(2);
+      expect(evalExpr('self.items!min()', ctx)).toBe(1);
+      expect(evalExpr('self.items!max()', ctx)).toBe(3);
     });
 
     it('handles min/max on various types', () => {
-      expect(evalExpr('self.strings!min()')).toBe('a');
-      expect(evalExpr('self.strings!max()')).toBe('c');
+      expect(evalExpr('self.strings!min()', ctx)).toBe('a');
+      expect(evalExpr('self.strings!max()', ctx)).toBe('c');
     });
 
     it('handles collection avg with rounding', () => {
       // 7 / 3 = 2.3333333333... rounded to 10 places
-      expect(evalExpr('self.itemsForAvg!avg()')).toBe(2.3333333333);
+      expect(evalExpr('self.itemsForAvg!avg()', ctx)).toBe(2.3333333333);
     });
 
     it('handles iterator functions', () => {
-      expect(evalExpr('self.orderDetails!sum(od | od.quantity)')).toBe(27);
-      expect(evalExpr('self.orderDetails!avg(od | od.quantity)')).toBe(9);
-      expect(evalExpr('self.orderDetails!min(od | od.unitPrice)')).toBe(9.8);
-      expect(evalExpr('self.orderDetails!max(od | od.unitPrice)')).toBe(34.8);
-      expect(evalExpr("self.products!join(p | p.productName, ', ')")).toBe('Chai, Chang, Aniseed Syrup');
-      const filtered = evalExpr('self.orderDetails!filter(od | od.unitPrice < 10)');
+      expect(evalExpr('self.orderDetails!sum(od | od.quantity)', ctx)).toBe(27);
+      expect(evalExpr('self.orderDetails!avg(od | od.quantity)', ctx)).toBe(9);
+      expect(evalExpr('self.orderDetails!min(od | od.unitPrice)', ctx)).toBe(9.8);
+      expect(evalExpr('self.orderDetails!max(od | od.unitPrice)', ctx)).toBe(34.8);
+      expect(evalExpr("self.products!join(p | p.productName, ', ')", ctx)).toBe('Chai, Chang, Aniseed Syrup');
+      const filtered = evalExpr('self.orderDetails!filter(od | od.unitPrice < 10)', ctx) as OrderDetail[];
       expect(filtered).toHaveLength(1);
       expect(filtered[0].unitPrice).toBe(9.8);
-      const sorted = evalExpr('self.products!sort(p | p.unitPrice)');
+      const sorted = evalExpr('self.products!sort(p | p.unitPrice)', ctx) as Product[];
       expect(sorted[0].unitPrice).toBe(10);
-      const sortedDesc = evalExpr('self.products!sort(p | p.unitPrice DESC)');
+      const sortedDesc = evalExpr('self.products!sort(p | p.unitPrice DESC)', ctx) as Product[];
       expect(sortedDesc[0].unitPrice).toBe(19);
     });
 
     it('handles chained iterator functions with correct sorting', () => {
       const expr = 'self.products!filter(p | p.unitPrice > 10)!sort(p | p.productName DESC)';
-      const result = evalExpr(expr);
+      const result = evalExpr(expr, ctx) as Product[];
       // Products with price > 10 are Chai (18) and Chang (19).
       // Sorted by productName DESC, 'Chang' comes before 'Chai'.
       expect(result).toHaveLength(2);

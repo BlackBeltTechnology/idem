@@ -6,8 +6,10 @@
   "main": "dist/idem.cjs.js",
   "module": "dist/idem.es.js",
   "unpkg": "dist/idem.umd.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "browser": "./dist/idem.umd.js",
       "require": "./dist/idem.cjs.js",
       "import": "./dist/idem.es.js"
@@ -20,17 +22,34 @@
     "test:dev": "vitest",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "format": "biome format ./src --write && biome check --write ./src"
+    "format": "biome format ./src --write && biome check --write ./src",
+    "lint": "biome check ./src"
   },
-  "keywords": [],
+  "keywords": ["judo", "idem", "query-language"],
   "author": "",
-  "license": "ISC",
+  "contributors": [
+    {
+      "email": "norbert.herczeg@blackbelt.hu",
+      "name": "Norbert Herczeg",
+      "url": "https://github.com/noherczeg"
+    }
+  ],
+  "license": "EPL-2.0",
+  "files": [
+    "dist",
+    "LICENSE.txt",
+    "README.md",
+    "Idem.g4"
+  ],
   "devDependencies": {
+    "antlr-ng": "^1.0.9",
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.15.30",
     "@vitest/coverage-v8": "^3.2.2",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.2"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -38,9 +57,7 @@
     ]
   },
   "dependencies": {
-    "antlr-ng": "^1.0.9",
     "antlr4ng": "^3.0.16",
-    "date-fns": "^4.1.0",
-    "vitest": "^3.2.2"
+    "date-fns": "^4.1.0"
   }
 }

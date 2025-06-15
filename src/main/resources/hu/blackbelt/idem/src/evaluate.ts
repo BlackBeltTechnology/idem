@@ -1,6 +1,7 @@
 import { addDays, parseISO, subDays } from 'date-fns';
 import type { ASTNode } from '~/types/ast';
-import { dispatch, round } from './functional-dispatcher';
+import { dispatch } from './functional-dispatcher';
+import { expressionToAst } from './parse';
 import { parseLocalDateAsUTC } from './utils/datetime';
 
 export interface Self {
@@ -12,8 +13,11 @@ export interface EvalContext {
   self: Self;
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: this is fine
-export function evaluate<T = any>(node: ASTNode, ctx: EvalContext): T | null | number | boolean | string | Date | Self {
+export function evalExpr(expr: string, ctx?: EvalContext): unknown {
+  return evaluate(expressionToAst(expr), ctx);
+}
+
+export function evaluate(node: ASTNode, ctx: EvalContext = { self: {} }): unknown {
   if (!node) return null;
 
   switch (node.type) {
@@ -61,7 +65,7 @@ export function evaluate<T = any>(node: ASTNode, ctx: EvalContext): T | null | n
 
     case 'Unary': {
       if (!node.children) return null;
-      const operand = evaluate(node.children[0], ctx);
+      const operand = evaluate(node.children[0], ctx) as number;
       if (operand === null && node.operator !== 'not') return null;
       switch (node.operator) {
         case '-':
@@ -75,13 +79,13 @@ export function evaluate<T = any>(node: ASTNode, ctx: EvalContext): T | null | n
 
     case 'Binary': {
       if (!node.children) return null;
-      const left = evaluate(node.children[0], ctx);
+      const left = evaluate(node.children[0], ctx) as number;
 
       if (node.operator === 'and' && !toBoolean(left)) return false;
       if (node.operator === 'or' && toBoolean(left)) return true;
       if (node.operator === 'implies' && !toBoolean(left)) return true;
 
-      const right = evaluate(node.children[1], ctx);
+      const right = evaluate(node.children[1], ctx) as number;
 
       if (node.operator === '+') {
         if (typeof left === 'string' || typeof right === 'string') {
@@ -160,7 +164,7 @@ export function evaluate<T = any>(node: ASTNode, ctx: EvalContext): T | null | n
 
     case 'Navigation': {
       if (!node.target || !node.name) return null;
-      const target = evaluate(node.target, ctx);
+      const target = evaluate(node.target, ctx) as Record<string, unknown> | null;
       if (target === null || typeof target !== 'object' || target[node.name] === undefined) {
         return null;
       }
@@ -175,16 +179,20 @@ export function evaluate<T = any>(node: ASTNode, ctx: EvalContext): T | null | n
 
     case 'IndexAccess': {
       if (!node.children) return null;
-      const target = evaluate(node.children[0], ctx);
+      const target = evaluate(node.children[0], ctx) as
+        | Array<unknown>
+        | string
+        | Record<string | number, unknown>
+        | null;
       if (target === null) return null;
 
-      const index = evaluate(node.children[1], ctx);
+      const index = evaluate(node.children[1], ctx) as number;
       if (index === null) return null;
 
       if ((Array.isArray(target) || typeof target === 'string') && (index < 0 || index >= target.length)) {
         return null; // out of bounds
       }
-      const result = target[index];
+      const result = target?.[index];
       return result === undefined ? null : result;
     }
 
@@ -223,8 +231,7 @@ export function compare(left: any, right: any): number {
   return 0;
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: this is fine
-export function toBoolean(value: any): boolean {
+export function toBoolean(value: unknown): boolean {
   if (value === null || value === false) return false;
   if (typeof value === 'number' && value === 0) return false;
   if (typeof value === 'string' && value === '') return false;

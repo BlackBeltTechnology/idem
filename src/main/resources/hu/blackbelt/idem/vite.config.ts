@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { defineConfig } from 'vite';
+import dts from 'vite-plugin-dts';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -19,5 +20,10 @@ export default defineConfig(({ mode }) => ({
     },
     test: {
         // configuration for vitest
-    }
+    },
+    plugins: [
+      dts({
+        exclude: ['**/node_modules/**', '**/__tests__/**', '**/*.test.ts'],
+      }),
+    ],
 }));
